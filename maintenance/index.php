@@ -1,7 +1,7 @@
 <?php
 define('BIBLIOGRAPHIE_ROOT_PATH', '..');
 
-require BIBLIOGRAPHIE_ROOT_PATH.'/functions.php';
+require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 ?>
 
 <h2>Maintenance</h2>
@@ -9,17 +9,17 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/functions.php';
 
 $bibliographie_consistency_checks = array (
 	'authors' => array (
-		'charsetArtifacts'
+		'charsetArtifacts' => 'Authors with charset artifacts'
 	),
 
 	'publications' => array (
-		'withoutTopic',
-		'withoutTag'
+		'withoutTopic' => 'Publications without topic assignment',
+		'withoutTag' => 'Publications without tag assigment'
 	),
 
 	'topics' => array (
-		'loosenedSubgraphs',
-		'doubledNames'
+		'loosenedSubgraphs' => 'Subgraphs that got loose',
+		'doubledNames' => 'Topic names that occurr more than once'
 	)
 );
 
@@ -27,18 +27,17 @@ switch($_GET['task']){
 	case 'consistencyChecks':
 ?>
 
-<a href="javascript:;" onclick="bibliographie_maintenance_run_all_checks()">Run all checks...</a>
+<a href="javascript:;" onclick="bibliographie_maintenance_run_all_checks()" style="float: right;"><?php echo bibliographie_icon_get('tick')?> Run all checks...</a>
+<h3>Consistency checks</h3>
 <?php
 		foreach($bibliographie_consistency_checks as $category => $categoryChecks){
+			foreach($categoryChecks as $checkID => $checkTitle){
 ?>
 
-<h3><?php echo $category?></h3>
-<?php
-			foreach($categoryChecks as $check){
-?>
-
-<h4><?php echo $check?></h4>
-<div id="<?php echo $category.'_'.$check?>"><a href="javascript:;" onclick="bibliographie_maintenance_run_consistency_check('<?php echo $category.'_'.$check?>')">Run this check!</a></div>
+<h4><?php echo $checkTitle?></h4>
+<div id="<?php echo $category.'_'.$checkID?>" style="border: 1px solid #aaa; max-height: 300px; min-height: 50px; overflow-y: scroll;">
+	<a href="javascript:;" onclick="bibliographie_maintenance_run_consistency_check('<?php echo $category.'_'.$checkID?>')"><?php echo bibliographie_icon_get('tick')?> Run this check!</a>
+</div>
 <?php
 			}
 
@@ -53,42 +52,6 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 <?php
 	break;
 
-	case 'ToDo':
-		$title = 'ToDo list';
-?>
-
-<h4>Publication editor</h4>
-<ul>
-	<li>Auf fehlende Felder einmal hinweisen, und beim zweiten speichern ignorieren ...</li>
-</ul>
-
-<h4>Notes</h4>
-<ul>
-	<li>private Notizen</li>
-</ul>
-
-<h4>Import</h4>
-<ul>
-	<li>Quellen: Amazon und PubMED</li>
-</ul>
-
-<h4>Parsing</h4>
-<ul>
-	<li>Handle number and volume as equivalents.</li>
-	<li>Handle booktile and journal as equivalents.</li>
-</ul>
-
-<h4>Maintenance</h4>
-<ul>
-	<li>Datenbank aus Log wiederherstellen...</li>
-</ul>
-
-<h4>Suche</h4>
-<ul>
-	<li>Zeiträume</li>
-</ul>
-<?php
-	break;
 	case 'lockedTopics':
 		$title = 'Locked topics';
 ?>
@@ -99,7 +62,7 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 
 		if($_SERVER['REQUEST_METHOD'] == 'POST'){
 			echo '<ul>';
-			foreach(explode(',', $_POST['topics']) as $topic){
+			foreach(csv2array(',', $_POST['topics']) as $topic){
 				$topic = bibliographie_topics_get_data($topic);
 				if(is_object($topic)){
 					if(in_array($topic->topic_id, $lockedTopics))
@@ -163,7 +126,7 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 <script type="text/javascript">
 	/* <![CDATA[ */
 $(function () {
-	bibliographie_publications_topic_input_tokenized('topics', 'topicsContainer', []);
+	bibliographie_topics_input_tokenized('topics', 'topicsContainer', []);
 });
 	/* ]]> */
 </script>

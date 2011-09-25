@@ -1,7 +1,7 @@
 <?php
 define('BIBLIOGRAPHIE_ROOT_PATH', '..');
 
-require BIBLIOGRAPHIE_ROOT_PATH.'/functions.php';
+require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 ?>
 
 <h2>Publications</h2>
@@ -217,7 +217,7 @@ $(function () {
 
 			if(in_array($_POST['pub_type'], $bibliographie_publication_types)){
 				foreach($bibliographie_publication_fields[mb_strtolower($_POST['pub_type'])][0] as $requiredField){
-					if(mb_strpos($requiredField, ',')){
+					if(mb_strpos($requiredField, ',') !== false){
 						$fields = explode(',', $requiredField);
 						if(empty($_POST[$fields[0]]) and empty($_POST[$fields[1]]))
 							$errors[] = 'You have to fill '.$fields[0].' or '.$fields[1].'!';
@@ -225,10 +225,10 @@ $(function () {
 						$errors[] = 'You did not fill required field '.$requiredField.'!';
 				}
 
-				$author = explode(',', $_POST['author']);
-				$editor = explode(',', $_POST['editor']);
-				$topics = explode(',', $_POST['topics']);
-				$tags = explode(',', $_POST['tags']);
+				$author = csv2array($_POST['author'], 'int');
+				$editor = csv2array($_POST['editor'], 'int');
+				$topics = csv2array($_POST['topics'], 'int');
+				$tags = csv2array($_POST['tags'], 'int');
 
 				if(count($errors) == 0){
 					if(is_array($publication)){
@@ -329,7 +329,7 @@ $(function () {
 			 */
 			if(!empty($_POST['tags'])){
 				if(preg_match('~[0-9]+(\,[0-9]+)*~', $_POST['tags'])){
-					$tags = explode(',', $_POST['tags']);
+					$tags = csv2array($_POST['tags'], 'int');
 					foreach($tags as $tag)
 						$prePopulateTags[] = array (
 							'id' => $tag,
@@ -343,7 +343,7 @@ $(function () {
 			 */
 			if(!empty($_POST['topics'])){
 				if(preg_match('~[0-9]+(\,[0-9]+)*~', $_POST['topics'])){
-					$topics = explode(',', $_POST['topics']);
+					$topics = csv2array($_POST['topics'], 'int');
 					foreach($topics as $topic){
 						$prePopulateTopics[] = array (
 							'id' => $topic,
@@ -412,8 +412,8 @@ $(function () {
 
 		<label for="title" class="block">Title</label>
 		<input type="text" id="title" name="title" style="width: 100%" value="<?php echo htmlspecialchars($_POST['title'])?>" class="bibtex" tabindex="4" />
+
 		<div id="similarTitleContainer" class="bibliographie_similarity_container"></div>
-		<br style="clear: both;" />
 
 		<div style="float: right; width: 50%">
 			<label for="month" class="block">Month</label>
@@ -544,7 +544,7 @@ $(function() {
 		delayRequest('bibliographie_publications_show_fields', Array(event.target.value));
 	});
 
-	$('#title').bind('change keyup', function (event) {
+	$('#title').bind('mouseup keyup', function (event) {
 		delayRequest('bibliographie_publications_check_title', Array(event.target.value, pub_id));
 	});
 

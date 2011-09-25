@@ -1,7 +1,7 @@
 <?php
 define('BIBLIOGRAPHIE_ROOT_PATH', '..');
 
-require BIBLIOGRAPHIE_ROOT_PATH.'/functions.php';
+require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 
 ?>
 
@@ -54,8 +54,8 @@ switch($_GET['task']){
 		if(!$done){
 ?>
 
+<h3>Author editor</h3>
 <p class="notice">On this page you can create and edit authors! Just fill in the required fields and hit save!</p>
-
 <?php
 			if(is_array($author)){
 				$_POST = $author;

@@ -3,7 +3,7 @@
 define('BIBLIOGRAPHIE_ROOT_PATH', '..');
 define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
-require BIBLIOGRAPHIE_ROOT_PATH.'/functions.php';
+require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 
 switch($_GET['task']){
 	case 'coAuthors':
@@ -51,7 +51,7 @@ ORDER BY `surname`, `firstname`");
 	case 'authorSets':
 		if(!empty($_GET['authors'])){
 			if(is_csv($_GET['authors'], 'int')){
-				$authors = explode(',', $_GET['authors']);
+				$authors = csv2array($_GET['authors'], 'int');
 
 				if(count($authors) > 1){
 					$publications = array();

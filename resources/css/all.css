@@ -334,10 +334,18 @@
 		border: 1px solid #aaa;
 		color: #000;
 		display: none;
-		float: right;
-		font-size: 0.8em;
+		font-size: 0.7em;
 		padding: 5px;
-		width: 80%;
+	}
+
+	.bibliographie_similarity_list_container {
+		background: #eee;
+		clear: both;
+		color: #000;
+		display: none;
+		padding: 5px;
+		max-height: 300px;
+		overflow-y: scroll;
 	}
 
 	.bibliographie_checkData_entry {
