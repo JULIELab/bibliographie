@@ -17,7 +17,7 @@ function bibliographie_tags_create_tag ($tag) {
 	);
 
 	if($return){
-		bibliographie_log('tags', 'create', json_encode($data));
+		bibliographie_log('tags', 'createTag', json_encode($data));
 		return $data;
 	}
 
@@ -139,6 +139,7 @@ function bibliographie_tags_print_cloud ($tags, $options = array()) {
 	<div id="bibliographie_tag_cloud" style="border: 1px solid #aaa; border-radius: 20px; font-size: 0.8em; text-align: center; padding: 20px;">
 <?php
 		foreach($tags as $tag){
+			$tag = bibliographie_tags_get_data($tag->tag_id);
 			/**
 			 * Converges against BIBLIOGRAPHIE_TAG_SIZE_FACTOR.
 			 */
