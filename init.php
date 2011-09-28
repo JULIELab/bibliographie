@@ -13,11 +13,6 @@ if(!file_exists(dirname(__FILE__).'/config.php'))
 	bibliographie_exit('Config file missing!', 'Sorry, but we have no config file!');
 require dirname(__FILE__).'/config.php';
 
-/**
- * Initialize variable for database query stats.
- */
-$bibliographie_database_queries = array();
-
 $bibliographie_history_path_identifier = '';
 
 /**
@@ -87,7 +82,7 @@ if(mysql_num_rows(mysql_query("SHOW TABLES LIKE 'bibliographie_log'")) == 0){
 	PRIMARY KEY (`log_id`)
 ) COLLATE='utf8_general_ci' ENGINE=MyISAM;");
 
-			mysql_query("CREATE TABLE `lockedtables` (
+			mysql_query("CREATE TABLE `lockedtopics` (
 	`topic_id` INT(10) UNSIGNED NOT NULL
 ) COLLATE='utf8_general_ci' ENGINE=MyISAM;");
 
@@ -341,6 +336,9 @@ if(!is_dir(dirname(__FILE__).'/logs'))
 if($_GET['ignoreCache'] == 1)
 	define('BIBLIOGRAPHIE_CACHING', false);
 
+/**
+ * If requested purge the cache.
+ */
 if($_GET['purgeCache'] == 1)
 	foreach(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/cache') as $file)
 		if($file != '.' and $file != '..')
@@ -364,3 +362,9 @@ if(!defined('BIBLIOGRAPHIE_OUTPUT_BODY'))
  * Set standard title for header.
  */
 $title = 'bibliographie';
+
+/**
+ * Set error/exception handling
+ */
+set_exception_handler('bibliographie_exception_handler');
+set_error_handler('bibliographie_error_handler');
