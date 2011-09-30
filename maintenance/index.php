@@ -61,20 +61,23 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 		$lockedTopics = bibliographie_topics_get_locked_topics();
 
 		if($_SERVER['REQUEST_METHOD'] == 'POST'){
+			$topics = csv2array($_POST['topics'], 'int');
 			echo '<ul>';
-			foreach(csv2array(',', $_POST['topics']) as $topic){
+
+			foreach($topics as $topic){
 				$topic = bibliographie_topics_get_data($topic);
+
 				if(is_object($topic)){
 					if(in_array($topic->topic_id, $lockedTopics))
-						echo '<li class="notice">The topic <em>'.htmlspecialchars($topic->name).'</em> was in the list of locked tables yet.</li>';
+						echo '<li class="notice">The topic <em>'.bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true)).'</em> was in the list of locked tables yet.</li>';
 
 					else{
 						$result = bibliographie_maintenance_lock_topic($topic->topic_id);
 
 						if($result)
-							echo '<li class="success">The topic <em>'.htmlspecialchars($topic->name).'</em> was added to the list of locked tables.</li>';
+							echo '<li class="success">The topic <em>'.bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true)).'</em> was added to the list of locked tables.</li>';
 						else
-							echo '<li class="error">The topic <em>'.htmlspecialchars($topic->name).'</em> could not be added to the list of locked tables!</li>';
+							echo '<li class="error">The topic <em>'.bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true)).'</em> could not be added to the list of locked tables!</li>';
 					}
 				}
 			}
@@ -98,9 +101,9 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 ?>
 
 	<tr id="topic_<?php echo $topic->topic_id?>">
-		<td><a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&topic_id=<?php echo ((int) $topic->topic_id)?>)?>"><?php echo htmlspecialchars($topic->name)?></td>
+		<td><a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&topic_id=<?php echo (int) $topic->topic_id?>)?>"><?php echo bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true))?></td>
 		<td><?php echo htmlspecialchars($topic->description)?></td>
-		<td><a href="javascript:;" onclick="bibliographie_maintenance_unlock_topic(<?php echo ((int) $topic->topic_id)?>)"><?php echo bibliographie_icon_get('lock-open')?></a></td>
+		<td><a href="javascript:;" onclick="bibliographie_maintenance_unlock_topic(<?php echo (int) $topic->topic_id?>"><?php echo bibliographie_icon_get('lock-open')?></a></td>
 	</tr>
 <?php
 			}
