@@ -9,7 +9,8 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 
 $bibliographie_consistency_checks = array (
 	'authors' => array (
-		'charsetArtifacts' => 'Authors with charset artifacts'
+		'charsetArtifacts' => 'Authors with charset artifacts',
+		'withoutPublications' => 'Authors without publications'
 	),
 
 	'publications' => array (
@@ -25,6 +26,7 @@ $bibliographie_consistency_checks = array (
 
 switch($_GET['task']){
 	case 'consistencyChecks':
+		bibliographie_history_append_step('maintenance', 'Consistency checks');
 ?>
 
 <a href="javascript:;" onclick="bibliographie_maintenance_run_all_checks()" style="float: right;"><?php echo bibliographie_icon_get('tick')?> Run all checks...</a>
@@ -53,7 +55,8 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 	break;
 
 	case 'lockedTopics':
-		$title = 'Locked topics';
+		$bibliographie_title = 'Locked topics';
+		bibliographie_history_append_step('maintenance', 'Locked topics');
 ?>
 
 <h3>Locked topics</h3>
@@ -138,7 +141,8 @@ $(function () {
 
 	case 'parseLog':
 	default:
-		$title = 'Parse log';
+		bibliographie_history_append_step('maintenance', 'Parse log');
+		$bibliographie_title = 'Parse log';
 ?>
 
 <h3>Parse logs</h3>

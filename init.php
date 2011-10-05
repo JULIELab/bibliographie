@@ -316,6 +316,7 @@ if(mysql_num_rows(mysql_query("SHOW TABLES LIKE 'bibliographie_log'")) == 0){
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
 
 		mysql_query("INSERT INTO `a2users` (`login`) VALUES ('".mysql_real_escape_string(stripslashes($_SERVER['PHP_AUTH_USER']))."');");
+		mysql_query("INSERT INTO `a2topics` (`name`, `description`) VALUES ('Top', 'Meta-topic as top of the topic hierarchy.');");
 		echo '<p>Scheme has been created!!!</p>';
 	}
 	echo '</body></html>';
@@ -364,7 +365,7 @@ if(!defined('BIBLIOGRAPHIE_OUTPUT_BODY'))
 /**
  * Set standard title for header.
  */
-$title = 'bibliographie';
+$bibliographie_title = 'bibliographie';
 
 /**
  * Set error/exception handling
