@@ -156,6 +156,7 @@ $(function () {
 
 	case 'showTopic':
 		$topic = bibliographie_topics_get_data($_GET['topic_id']);
+
 		if(is_object($topic)){
 			/**
 			 * Set meta data for bibliographie output.
@@ -228,12 +229,13 @@ $(function () {
 <?php
 			}
 
-			if(count(bibliographie_topics_get_tags($topic->topic_id)) > 0){
+			$tags = bibliographie_topics_get_tags($topic->topic_id);
+			if(is_array($tags) and count($tags) > 0){
 ?>
 
 <h4>Publications have the following tags</h4>
 <?php
-				bibliographie_tags_print_cloud(bibliographie_topics_get_tags($topic->topic_id), array('topic_id' => $topic->topic_id));
+				bibliographie_tags_print_cloud($tags, array('topic_id' => $topic->topic_id));
 			}
 		}
 	break;
@@ -251,9 +253,9 @@ $(function () {
 			}
 ?>
 
-<h3>Publications assigned to <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&amp;topic_id=<?php echo $topic->topic_id?>"><?php echo htmlspecialchars($topic->name)?></a><?php echo $bibliographie_title?></h3>
+<h3>Publications assigned to <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&amp;topic_id=<?php echo $topic->topic_id?>"><?php echo htmlspecialchars($topic->name)?></a><?php echo $title?></h3>
 <?php
-			bibliographie_publications_print_list(bibliographie_topics_get_publications($topic->topic_id, ((bool) $_GET['includeSubtopics'])), BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=showPublications&topic_id='.((int) $_GET['topic_id']).$includeSubtopics, $_GET['bookmarkBatch']);
+			bibliographie_publications_print_list(bibliographie_topics_get_publications($topic->topic_id, (bool) $_GET['includeSubtopics']), BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=showPublications&topic_id='.((int) $_GET['topic_id']).$includeSubtopics, $_GET['bookmarkBatch']);
 		}
 	break;
 

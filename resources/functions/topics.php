@@ -7,43 +7,42 @@
 
 /**
  * Create a new topic.
- * @global PDO $db
  * @param string $name The name of the topic	.
  * @param string $description The description of the topic.
  * @param string $url The URL of the topic.
  * @return boolean True on success or false otherwise.
  */
 function bibliographie_topics_create_topic ($name, $description, $url, array $topics, $topic_id = null) {
-	global $db;
 	static $topic = null, $createRelations = null;
 	$return = false;
 
 	if($topic === null)
-		$topic = $db->prepare('INSERT INTO `a2topics` (
+		$topic = DB::getInstance()->prepare('INSERT INTO `a2topics` (
 	`topic_id`, `name`, `description`, `url`
 ) VALUES (
 	:topic_id, :name, :description, :url
 )');
 
-	$topic->bindParam('topic_id', $topic_id);
-	$topic->bindParam('name', $name);
-	$topic->bindParam('description', $description);
-	$topic->bindParam('url', $url);
-
-	$topic->execute();
+	$return = $topic->execute(array(
+		'topic_id' => (int) $topic_id,
+		'name' => $name,
+		'description' => $description,
+		'url' => $url
+	));
 
 	if($topic_id === null)
-		$topic_id = $db->lastInsertId();
+		$topic_id = DB::getInstance()->lastInsertId();
 
-	if(!empty($topic_id)){
+	if($return and !empty($topic_id)){
 		if(count($topics) > 0){
 			if($createRelations == null)
-				$createRelations = $db->prepare('INSERT INTO `a2topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (:topic_id, :parent_topic)');
+				$createRelations = DB::getInstance()->prepare('INSERT INTO `a2topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (:topic_id, :parent_topic)');
 
 			foreach($topics as $parentTopic){
-				$createRelations->bindParam('topic_id', $topic_id);
-				$createRelations->bindParam('parent_topic', $parentTopic);
-				$createRelations->execute();
+				$createRelations->execute(array(
+					'topic_id' => (int) $topic_id,
+					'parent_topic' => (int) $parentTopic
+				));
 
 				bibliographie_purge_cache('topic_'.((int) $parentTopic).'_');
 			}
@@ -73,91 +72,125 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
  * @param array $topics
  */
 function bibliographie_topics_edit_topic ($topic_id, $name, $description, $url, array $topics) {
-	$dataBefore = bibliographie_topics_get_data($topic_id, 'assoc');
+	$dataBefore = (array) bibliographie_topics_get_data($topic_id);
 
 	if(is_array($dataBefore)){
-		/**
-		 * Get subtopics recursively and direct parent topics.
-		 */
-		$subTopics = bibliographie_topics_get_subtopics($topic_id, true);
-		$subTopics[] = $topic_id;
+		try {
+			DB::getInstance()->beginTransaction();
+			/**
+			 * Get subtopics recursively and direct parent topics.
+			 */
+			$subTopics = bibliographie_topics_get_subtopics($dataBefore['topic_id'], true);
+			$subTopics[] = $dataBefore['topic_id'];
 
-		$dataBefore['topics'] = bibliographie_topics_get_parent_topics($topic_id);
+			$dataBefore['topics'] = bibliographie_topics_get_parent_topics($dataBefore['topic_id']);
 
-		/**
-		 * Sort the topics array to avoid redundant updating.
-		 */
-		natsort($topics);
-		natsort($dataBefore['topics']);
-		$topics = array_values($topics);
-		$dataBefore['topics'] = array_values($dataBefore['topics']);
+			/**
+			 * Sort the topics array to avoid redundant updating.
+			 */
+			natsort($topics);
+			natsort($dataBefore['topics']);
+			$topics = array_values($topics);
+			$dataBefore['topics'] = array_values($dataBefore['topics']);
 
-		/**
-		 * Check for potential circles... Exclude those topics that would produce a circle from the list of parent topics.
-		 */
-		$safeTopics = array_diff($topics, $subTopics);
-		if(count($safeTopics) != count($topics)){
-			echo '<p class="error">There was at least one parent topic that would have produced a circle. Those topics were left out!</p>';
-			echo '<strong>Those are the topics, that have been left out:</strong><ul>';
-			foreach(array_diff($topics, $safeTopics) as $topic)
-				echo '<li>'.bibliographie_topics_parse_name($topic, array('linkProfile' => true)).'</li>';
-			echo '</ul>';
-		}
-
-		/**
-		 * Delete the links to topics that are no longer in the list of parent topics.
-		 */
-		$deleteTopicLinks = array_diff($dataBefore['topics'], $safeTopics);
-		if(count($deleteTopicLinks) > 0){
-			foreach($deleteTopicLinks as $deleteTopicLink){
-				bibliographie_purge_cache('topic_'.$deleteTopicLink.'_');
-				mysql_query("DELETE FROM `a2topictopiclink` WHERE `source_topic_id` = ".((int) $topic_id)." AND `target_topic_id` = ".((int) $deleteTopicLink));
+			/**
+			 * Check for potential circles... Exclude those topics that would produce a circle from the list of parent topics.
+			 */
+			$safeTopics = array_diff($topics, $subTopics);
+			if(count($safeTopics) != count($topics)){
+				echo '<p class="error">There was at least one parent topic that would have produced a circle. Those topics were left out!</p>';
+				echo '<strong>Those are the topics, that have been left out:</strong><ul>';
+				foreach(array_diff($topics, $safeTopics) as $topic)
+					echo '<li>'.bibliographie_topics_parse_name($topic, array('linkProfile' => true)).'</li>';
+				echo '</ul>';
 			}
-		}
 
-		/**
-		 * Update the topic data itself if any change was made.
-		 */
-		if($name != $dataBefore['name'] or $description != $dataBefore['description'] or $url != $dataBefore['url']){
-			$return = mysql_query("UPDATE `a2topics` SET
-		`name`= '".mysql_real_escape_string(stripslashes($name))."',
-		`description` = '".mysql_real_escape_string(stripslashes($description))."',
-		`url` = '".mysql_real_escape_string(stripslashes($url))."'
-	WHERE
-		`topic_id` = ".((int) $topic_id)."
-	LIMIT 1");
-		}
+			/**
+			 * Delete the links to topics that are no longer in the list of parent topics.
+			 */
+			$deleteTopicLinks = array_diff($dataBefore['topics'], $safeTopics);
+			if(count($deleteTopicLinks) > 0){
+				$deleteLink = DB::getInstance()->prepare('DELETE FROM
+	`a2topictopiclink`
+WHERE
+	`source_topic_id` = :topic_id AND
+	`target_topic_id` = :deleteTopicLink
+LIMIT 1');
 
-		/**
-		 * Add links to topics that were not in the list of parent topics before.
-		 */
-		$addTopicLinks = array_diff($safeTopics, $dataBefore['topics']);
-		if(count($addTopicLinks) > 0){
-			foreach($safeTopics as $addTopic){
-				if(!in_array($addTopic, $dataBefore['topics'])){
-					mysql_query("INSERT INTO `a2topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (".((int) $topic_id).", ".((int) $addTopic).")");
-					bibliographie_purge_cache('topic_'.((int) $addTopic).'_');
+				foreach($deleteTopicLinks as $deleteTopicLink){
+					$deleteLink->execute(array(
+						'topic_id' => (int) $dataBefore['topic_id'],
+						'deleteTopicLink' => (int) $deleteTopicLink
+					));
+					bibliographie_purge_cache('topic_'.$deleteTopicLink.'_');
 				}
 			}
+
+			/**
+			 * Update the topic data itself if any change was made.
+			 */
+			if($name != $dataBefore['name'] or $description != $dataBefore['description'] or $url != $dataBefore['url']){
+				$updateData = DB::getInstance()->prepare('UPDATE `a2topics` SET
+			`name`= :name,
+			`description` = :description,
+			`url` = :url
+		WHERE
+			`topic_id` = :topic_id
+		LIMIT 1');
+				$updateData->execute(array(
+					'name' => $name,
+					'description' => $description,
+					'url' => $url,
+					'topic_id' => (int) $dataBefore['topic_id']
+				));
+			}
+
+			/**
+			 * Add links to topics that were not in the list of parent topics before.
+			 */
+			$addTopicLinks = array_diff($safeTopics, $dataBefore['topics']);
+			if(count($addTopicLinks) > 0){
+				$addLink = DB::getInstance()->prepare('INSERT INTO `a2topictopiclink` (
+	`source_topic_id`,
+	`target_topic_id`
+) VALUES (
+	:topic_id,
+	:addTopic
+)');
+				foreach($safeTopics as $addTopic){
+					if(!in_array($addTopic, $dataBefore['topics'])){
+						$addLink->execute(array(
+							'topic_id' => (int) $dataBefore['topic_id'],
+							'addTopic' => (int) $addTopic
+						));
+						bibliographie_purge_cache('topic_'.((int) $addTopic).'_');
+					}
+				}
+			}
+
+			$data = array(
+				'dataBefore' => $dataBefore,
+				'dataAfter' => array (
+					'topic_id' => (int) $dataBefore['topic_id'],
+					'name' => $name,
+					'description' => $description,
+					'url' => $url,
+					'topics' => $safeTopics
+				)
+			);
+
+			if($data['dataBefore'] != $data['dataAfter']){
+				bibliographie_log('topics', 'editTopic', json_encode($data));
+				bibliographie_purge_cache('topic_'.((int) $dataBefore['topic_id']).'_');
+			}
+
+			DB::getInstance()->commit();
+			return $data;
+
+		} catch (PDOException $e) {
+			DB::getInstance()->rollBack();
+			bibliographie_exit('Database error', 'There was an error while saving changes! '.$e->getMessage());
 		}
-
-		$data = array(
-			'dataBefore' => $dataBefore,
-			'dataAfter' => array (
-				'topic_id' => (int) $topic_id,
-				'name' => $name,
-				'description' => $description,
-				'url' => $url,
-				'topics' => $safeTopics
-			)
-		);
-
-		if($data['dataBefore'] != $data['dataAfter']){
-			bibliographie_log('topics', 'editTopic', json_encode($data));
-			bibliographie_purge_cache('topic_'.((int) $topic_id).'_');
-		}
-
-		return $data;
 	}
 
 	return false;
@@ -171,13 +204,11 @@ function bibliographie_topics_edit_topic ($topic_id, $name, $description, $url, 
 
 /**
  * Get the data of a topic.
- * @global PDO $db
  * @param int $topic_id The id of a topic.
  * @param string $type
  * @return mixed Object on success or false otherwise.
  */
 function bibliographie_topics_get_data ($topic_id, $type = 'object') {
-	global $db;
 	static $topic = null;
 
 	$return = false;
@@ -192,7 +223,7 @@ function bibliographie_topics_get_data ($topic_id, $type = 'object') {
 		}
 
 		if($topic === null)
-			$topic = $db->prepare("SELECT `topic_id`, `name`, `description`, `url` FROM `a2topics` WHERE `topic_id` = :topic_id");
+			$topic = DB::getInstance()->prepare("SELECT `topic_id`, `name`, `description`, `url` FROM `a2topics` WHERE `topic_id` = :topic_id");
 
 		$topic->bindParam(':topic_id', $topic_id);
 		$topic->execute();
@@ -243,7 +274,6 @@ function bibliographie_topics_parse_name ($topic_id, $options = array()) {
  * @return mixed Array on success of false otherwise.
  */
 function bibliographie_topics_get_parent_topics ($topic_id, $recursive = false) {
-	global $db;
 	static $parentTopics = null;
 
 	$topic = bibliographie_topics_get_data($topic_id);
@@ -256,7 +286,7 @@ function bibliographie_topics_get_parent_topics ($topic_id, $recursive = false) 
 		$return = array();
 
 		if($parentTopics == null){
-			$parentTopics = $db->prepare('SELECT `target_topic_id` FROM
+			$parentTopics = DB::getInstance()->prepare('SELECT `target_topic_id` FROM
 	`a2topictopiclink` relations,
 	`a2topics` topics
 WHERE
@@ -295,13 +325,11 @@ ORDER BY topics.`name`');
 
 /**
  * Get a list of subtopics recursively with their own subtopics and so on.
- * @global PDO $db
  * @param int $topic_id The id of a topic.
  * @param bool $recursive Wether or not to fetch all subtopics recursively or just the direct children.
  * @return mixed An array on success or error otherwise.
  */
 function bibliographie_topics_get_subtopics ($topic_id, $recursive = false) {
-	global $db;
 	static $subtopics = null;
 
 	$topic = bibliographie_topics_get_data($topic_id);
@@ -314,7 +342,7 @@ function bibliographie_topics_get_subtopics ($topic_id, $recursive = false) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/topic_'.((int) $topic_id).'_'.((int) $recursive).'_subtopics.json'));
 
 		if($subtopics === null){
-			$subtopics = $db->prepare('SELECT `source_topic_id` FROM `a2topictopiclink` WHERE `target_topic_id` = :topic_id');
+			$subtopics = DB::getInstance()->prepare('SELECT `source_topic_id` FROM `a2topictopiclink` WHERE `target_topic_id` = :topic_id');
 			$subtopics->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -344,12 +372,10 @@ function bibliographie_topics_get_subtopics ($topic_id, $recursive = false) {
 
 /**
  * Parses the children of a topic and their data.
- * @global PDO $db
  * @param int $topic_id The id of a topic.
  * @return mixed An array on success or false otherwise.
  */
 function bibliographie_topics_parse_subtopics ($topic_id) {
-	global $db;
 	static $subtopics = null;
 
 	$topic = bibliographie_topics_get_data($topic_id);
@@ -359,7 +385,7 @@ function bibliographie_topics_parse_subtopics ($topic_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/topic_'.((int) $topic_id).'_subtopics_data.json'));
 
 		if($subtopics === null)
-			$subtopics = $db->prepare("SELECT `topic_id`, `name`, `amount_of_subtopics` FROM
+			$subtopics = DB::getInstance()->prepare("SELECT `topic_id`, `name`, `amount_of_subtopics` FROM
 	`a2topictopiclink` relations,
 	`a2topics` topics
 LEFT JOIN (
@@ -399,7 +425,6 @@ ORDER BY
  * @return mixed
  */
 function bibliographie_topics_get_publications ($topic_id, $includeSubtopics = false) {
-	global $db;
 	static $publications = null;
 
 	$topic = bibliographie_topics_get_data($topic_id);
@@ -412,7 +437,7 @@ function bibliographie_topics_get_publications ($topic_id, $includeSubtopics = f
 		$return = array();
 
 		if($publications === null){
-			$publications = $db->prepare('SELECT publications.`pub_id`, publications.`year` FROM
+			$publications = DB::getInstance()->prepare('SELECT publications.`pub_id`, publications.`year` FROM
 	`a2topicpublicationlink` relations,
 	`a2publication` publications
 WHERE
@@ -453,10 +478,6 @@ ORDER BY
  * @return type
  */
 function bibliographie_topics_get_tags ($topic_id, $includeSubtopics = true) {
-	/**
-	 * TODO: Gets very slow for many publications, needs optimization!
-	 */
-	global $db;
 	static $tags = null;
 
 	$return = false;
@@ -471,7 +492,7 @@ function bibliographie_topics_get_tags ($topic_id, $includeSubtopics = true) {
 
 		if(count($publications) > 0){
 			if($tags === null){
-				$tags = $db->prepare("SELECT
+				$tags = DB::getInstance()->prepare("SELECT
 	`tag_id`,
 	COUNT(*) AS `count`
 FROM
@@ -505,7 +526,6 @@ GROUP BY
  * @return array Gives an array of locked topics.
  */
 function bibliographie_topics_get_locked_topics () {
-	global $db;
 	static $topics = null;
 
 	$return = array();
@@ -514,7 +534,7 @@ function bibliographie_topics_get_locked_topics () {
 		return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/topics_locked.json'));
 
 	if($topics === null){
-		$topics = $db->prepare("SELECT `topic_id` FROM `lockedtopics` ORDER BY `topic_id`");
+		$topics = DB::getInstance()->prepare("SELECT `topic_id` FROM `lockedtopics` ORDER BY `topic_id`");
 		$topics->setFetchMode(PDO::FETCH_OBJ);
 	}
 

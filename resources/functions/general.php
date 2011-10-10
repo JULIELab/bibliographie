@@ -1,4 +1,39 @@
 <?php
+class DB {
+	private
+		static $instance = null;
+
+	private function __construct () {}
+
+	/**
+	 *
+	 * @return PDO
+	 */
+	public static function getInstance () {
+		if(!self::$instance){
+			try {
+				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE, BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8') );
+				self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			} catch (PDOException $e) {
+				bibliographie_exit('No database connection', 'Sorry, but we have no connection to the database! '.$e->getMessage());
+			}
+		}
+
+		return self::$instance;
+	}
+
+	private function __clone () {}
+
+	public function status () {
+		return (bool) self::$instance;
+	}
+
+	public function close () {
+		if(self::$instance)
+			self::$instance = null;
+	}
+}
+
 /**
  * Convert a CSV-string into an array.
  * @param string $csv
@@ -14,6 +49,30 @@ function csv2array ($csv, $type = null) {
 			for($i = 0; $i < count($return); $i++)
 				$return[$i] = (int) $return[$i];
 	}
+
+	return $return;
+}
+
+/**
+ * Convert an array into a csv string.
+ * @param array $array
+ * @return string
+ */
+function array2csv (array $array) {
+	$return = (string) '';
+
+	if(count($array) > 0){
+		foreach($array as $value){
+			if(!empty($return))
+				$return .= ',';
+
+			if(!is_numeric($value) or mb_strpos($value, ',') !== false)
+				$return .= "'".str_replace("'", "\'", $value)."'";
+			else
+				$return .= $value;
+		}
+	}else
+		echo 'array is to short';
 
 	return $return;
 }
@@ -266,6 +325,7 @@ require dirname(__FILE__).'/bookmarks.php';
 require dirname(__FILE__).'/charmap.php';
 require dirname(__FILE__).'/history.php';
 require dirname(__FILE__).'/maintenance.php';
+require dirname(__FILE__).'/notes.php';
 require dirname(__FILE__).'/publications.php';
 require dirname(__FILE__).'/search.php';
 require dirname(__FILE__).'/tags.php';
