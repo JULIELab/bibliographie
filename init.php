@@ -1,16 +1,33 @@
 <?php
-require dirname(__FILE__).'/resources/functions/general.php';
-
+/**
+ * Register starting time.
+ */
 define('BIBLIOGRAPHIE_SCRIPT_START', microtime(true));
 
 /**
- * If root path isnt defined by program file then define it now with the default value.
+ * Start output buffering and session.
  */
-if(!defined('BIBLIOGRAPHIE_ROOT_PATH'))
-	define('BIBLIOGRAPHIE_ROOT_PATH', dirname(__FILE__));
-
 ob_start();
 session_start();
+
+/**
+ * Set some UTF-8 options.
+ */
+header('Content-Type: text/html; charset=UTF-8');
+setlocale(LC_ALL, array('en_US.UTF-8', 'en_US', 'en'));
+mb_internal_encoding('UTF-8');
+date_default_timezone_set('Europe/Berlin');
+
+/**
+ * Require functions.
+ */
+require dirname(__FILE__).'/resources/functions/general.php';
+
+/**
+ * Exit if apache authentification is void.
+ */
+if(!isset($_SERVER['PHP_AUTH_USER']))
+	bibliographie_exit('Authentication error', 'It seems that there is an error with your authentication. Bibliographie can not read your login name and must therefore stop right here.');
 
 /**
  * Check for config file.
@@ -19,7 +36,24 @@ if(!file_exists(dirname(__FILE__).'/config.php'))
 	bibliographie_exit('Config file missing!', 'Sorry, but we have no config file!');
 require dirname(__FILE__).'/config.php';
 
+/**
+ * If root path isnt defined by program file then define it now with the default value.
+ */
+if(!defined('BIBLIOGRAPHIE_ROOT_PATH'))
+	define('BIBLIOGRAPHIE_ROOT_PATH', dirname(__FILE__));
+
+/**
+ * If outputting of body isnt defined yet then define it with the default value.
+ */
+if(!defined('BIBLIOGRAPHIE_OUTPUT_BODY'))
+	define('BIBLIOGRAPHIE_OUTPUT_BODY', true);
+
+/**
+ * Set global variables...
+ */
 $bibliographie_history_path_identifier = '';
+$bibliographie_title = 'bibliographie';
+$bibliographie_database_queries = array();
 
 /**
  * Check mysql connection.
@@ -36,21 +70,6 @@ if(!defined('BIBLIOGRAPHIE_MYSQL_CONNECTED'))
  */
 mysql_query("SET NAMES 'utf8'");
 mysql_query("SET CHARACTER SET 'utf8'");
-
-date_default_timezone_set('Europe/Berlin');
-setlocale(LC_ALL, array('en_US.UTF-8', 'en_US', 'en'));
-
-header('Content-Type: text/html; charset=UTF-8');
-mb_internal_encoding('UTF-8');
-
-/**
- * Check authentication.
- */
-if(!isset($_SERVER['PHP_AUTH_USER'])){
-	header('WWW-Authenticate: Basic realm="bibliographie"');
-	header('HTTP/1.0 401 Unauthorized');
-	exit('You are not logged in!');
-}
 
 if(mysql_num_rows(mysql_query("SHOW TABLES LIKE 'bibliographie_log'")) == 0){
 	echo '<!DOCTYPE html><html lang="de"><head><title>Initialize database</title></head><body><h1>Initialize database</h1>';
@@ -321,8 +340,20 @@ if(mysql_num_rows(mysql_query("SHOW TABLES LIKE 'bibliographie_log'")) == 0){
 	exit();
 }
 
-if(!bibliographie_user_get_id())
-	bibliographie_exit('Account missing!', 'Sorry, but you do not have an account for bibliographie!');
+/**
+ * If an authed user doesn't exist create him/her.
+ */
+if(!bibliographie_user_get_id()){
+	try {
+		$createUser = DB::getInstance()->prepare('INSERT INTO `a2users` (`login`) VALUES (:login)');
+		$createUser->execute(array(
+			'login' => $_SERVER['PHP_AUTH_USER']
+		));
+		echo '<p class="success">You have been created as a new user (<em>'.htmlspecialchars($_SERVER['PHP_AUTH_USER']).'</em>)!</p>';
+	} catch (PDOException $e) {
+		bibliographie_exit('Error creating user', 'Bibliographie could not create you as a user!');
+	}
+}
 
 /**
  * Check for necessary directories.
@@ -350,17 +381,3 @@ foreach(scandir(dirname(__FILE__).'/cache') as $object){
 	if(filemtime(dirname(__FILE__).'/cache/'.$object) + (60 * 60 * 24 * 2) < time())
 		unlink(dirname(__FILE__).'/cache/'.$object);
 }
-
-if(!defined('BIBLIOGRAPHIE_OUTPUT_BODY'))
-	define('BIBLIOGRAPHIE_OUTPUT_BODY', true);
-
-/**
- * Set standard title for header.
- */
-$bibliographie_title = 'bibliographie';
-
-/**
- * Set error/exception handling
- */
-set_exception_handler('bibliographie_exception_handler');
-set_error_handler('bibliographie_error_handler');

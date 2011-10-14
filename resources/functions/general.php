@@ -12,10 +12,10 @@ class DB {
 	public static function getInstance () {
 		if(!self::$instance){
 			try {
-				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE, BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8') );
+				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE.';charset=UTF-8', BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8') );
 				self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			} catch (PDOException $e) {
-				bibliographie_exit('No database connection', 'Sorry, but we have no connection to the database! '.$e->getMessage());
+				bibliographie_exit('No database connection', 'Sorry, but we have no connection to the database!<br />'.$e->getMessage());
 			}
 		}
 
@@ -132,21 +132,27 @@ function bibliographie_icon_get ($name) {
  * @param mixed $data Some kind of JSON representation from json_encode()
  */
 function bibliographie_log ($category, $action, $data) {
+	static $logAccess = null;
+
 	$logFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/logs/log_'.date('W_Y').'.log', 'a+');
 	$time = date('r');
 
-	mysql_query("INSERT INTO `bibliographie_log` (
+	if($logAccess === null)
+		$logAccess = DB::getInstance()->prepare('INSERT INTO `bibliographie_log` (
 	`log_file`,
 	`log_time`
 ) VALUES (
-	'".mysql_real_escape_string(stripslashes('log_'.date('W_Y').'.log'))."',
-	'".mysql_real_escape_string(stripslashes($time))."'
-)");
+	:file,
+	:time
+)');
 
-	echo mysql_error();
+	$logAccess->execute(array(
+		'file' => 'log_'.date('W_Y').'.log',
+		'time' => $time
+	));
 
 	$addFile = json_encode(array(
-		'id' => mysql_insert_id(),
+		'id' => DB::getInstance()->lastInsertId(),
 		'user' => bibliographie_user_get_id(),
 		'time' => $time,
 		'category' => $category,
@@ -245,21 +251,35 @@ function bibliographie_print_pages ($amountOfItems, $baseLink) {
  * @return bool True on success, false otherwise.
  */
 function bibliographie_user_get_id ($name = null) {
-	static $cache = array();
+	static $cache = array(), $checkUser = null;
+
+	$return = false;
 
 	if(empty($name))
 		$name = $_SERVER['PHP_AUTH_USER'];
 
 	if(empty($cache[$name])){
-		$user = mysql_query("SELECT * FROM `a2users` WHERE `login` = '".mysql_real_escape_string(stripslashes($name))."'");
-		if(mysql_num_rows($user)){
-			$user = mysql_fetch_object($user);
+		if($checkUser == null){
+			$checkUser = DB::getInstance()->prepare('SELECT `user_id`, `login` FROM `a2users` WHERE `login` = :login');
+			$checkUser->setFetchMode(PDO::FETCH_OBJ);
+		}
+
+		$checkUser->execute(array(
+			'login' => $name
+		));
+
+		if($checkUser->rowCount() == 1){
+			$user = $checkUser->fetch();
+
 			if($user->login == $name)
 				$cache[$name] = $user->user_id;
 		}
 	}
 
-	return $cache[$name];
+	if(!empty($cache[$name]))
+		$return = $cache[$name];
+
+	return $return;
 }
 
 /**
@@ -268,11 +288,21 @@ function bibliographie_user_get_id ($name = null) {
  * @return string
  */
 function bibliographie_user_get_name ($user_id) {
-	if(is_numeric($user_id)){
-		$user = mysql_query("SELECT * FROM `a2users` WHERE `user_id` = ".((int) $user_id));
+	static $checkUser = null;
 
-		if(mysql_num_rows($user) == 1){
-			$user = mysql_fetch_object($user);
+	if(is_numeric($user_id)){
+		if($checkUser === null){
+			$checkUser = DB::getInstance()->prepare('SELECT `login` FROM `a2users` WHERE `user_id` = :user_id LIMIT 1');
+			$checkUser->setFetchMode(PDO::FETCH_OBJ);
+		}
+
+		$checkUser->execute(array(
+			'user_id' => (int) $user_id
+		));
+
+		if($checkUser->rowCount() == 1){
+			$user = $checkUser->fetch();
+
 			return $user->login;
 		}
 	}
@@ -332,3 +362,9 @@ require dirname(__FILE__).'/tags.php';
 require dirname(__FILE__).'/topics.php';
 
 require dirname(__FILE__).'/../lib/BibTex.php';
+
+/**
+ * Set error and exception handling for uncaught errors and exceptions.
+ */
+set_exception_handler('bibliographie_exception_handler');
+set_error_handler('bibliographie_error_handler');

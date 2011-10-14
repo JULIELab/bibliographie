@@ -88,7 +88,7 @@ function bibliographie_publications_create_person (firstname, von, surname, jr, 
 		dataType: 'json',
 		success: function (json) {
 			$.jGrowl(json.text);
-			
+
 			if(json.status == 'success')
 				$('#'+role).tokenInput('add', {'id': json.author_id, 'name': json.name});
 		}
@@ -188,8 +188,9 @@ function bibliographie_publications_show_subgraph (topic) {
 	});
 }
 
-function bibliographie_publications_create_tag () {
-	tagName = window.prompt('Please enter the tag you want to create!');
+function bibliographie_publications_create_tag (tagName) {
+	if(tagName == null)
+		tagName = window.prompt('Please enter the tag you want to create!');
 
 	if(tagName == null)
 		return null;
@@ -206,8 +207,10 @@ function bibliographie_publications_create_tag () {
 		dataType: 'json',
 		success: function (json) {
 			$.jGrowl(json.text);
-			if(json.status == 'success')
+			if(json.status == 'success'){
 				$('#tags').tokenInput('add', {id: json.tag_id, name: json.tag});
+				$('#tags_tagNotExisting').empty().hide();
+			}
 		}
 	})
 

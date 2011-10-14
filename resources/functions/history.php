@@ -81,14 +81,31 @@ function bibliographie_history_rewrite_links ($matches) {
 	if(empty($bibliographie_history_path_identifier))
 		bibliographie_history_append_step('generic', 'Generic AJAX task');
 
-	if($matches[4] != 'javascript:;'){
-		$connector = '&amp;';
-		if(mb_strpos($matches[4], '?') === false)
-			$connector = '?';
+	$link = $matches[4];
 
-		if(mb_strpos($matches[4], 'from') === false)
-			$matches[4] .= $connector.'from='.$bibliographie_history_path_identifier;
+	if($link != 'javascript:;'){
+		$link = explode('#', $link);
+
+		if(!empty($link[1]))
+			$link[1] = '#'.$link[1];
+
+		if(!empty($link[0])){
+			$connector = '&amp;';
+			if(mb_strpos($link[0], '?') === false)
+				$connector = '?';
+
+			if(mb_strpos($link[0], 'from') === false)
+				$link = $link[0].$connector.'from='.$bibliographie_history_path_identifier.$link[1];
+
+
+		}elseif(empty($link[0]) and !empty($link[1])){
+			$link = $link[1];
+
+
+		}else{
+			$link = '?from='.$bibliographie_history_path_identifier;
+		}
 	}
 
-	return '<'.$matches[1].$matches[2].$matches[3].'="'.$matches[4].'"';
+	return '<'.$matches[1].$matches[2].$matches[3].'="'.$link.'"';
 }
