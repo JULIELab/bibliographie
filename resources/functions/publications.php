@@ -503,14 +503,16 @@ function bibliographie_publications_print_list (array $publications, $baseLink, 
 		if(!$onlyPublication){
 			echo '<p class="bibliographie_operations">';
 			if(count($publications) > 1)
-				echo '<span style="float: left">List contains '.count($publications).' publication(s)...</span><strong>List operations: </strong> ';
-
-			echo '<a href="javascript:;" onclick="bibliographie_publications_export_choose_type(\''.bibliographie_publications_cache_list($publications).'\')"><em>'.bibliographie_icon_get('page-white-go').' Export</em></a>';
+				echo '<span style="float: left">List contains '.count($publications).' publication(s)...</span>';
 
 			if(count($publications) > 1 and $showBookmarkingLink){
 				echo ' <a href="'.$baseLink.'&amp;bookmarkBatch=add"><em>'.bibliographie_icon_get('star').' Bookmark</em></a>';
 				echo ' <a href="'.$baseLink.'&amp;bookmarkBatch=remove"><em>'.bibliographie_icon_get('cross').' Unbookmark</em></a>';
 			}
+
+			echo ' <a href="javascript:;" onclick="bibliographie_publications_export_choose_type(\''.bibliographie_publications_cache_list($publications).'\')"><em>'.bibliographie_icon_get('page-white-go').' Export</em></a>';
+
+			echo ' <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.bibliographie_publications_cache_list($publications).'">'.bibliographie_icon_get('page-white-stack').' Batch</a>';
 			echo '</p>';
 		}
 
@@ -1020,8 +1022,8 @@ LIMIT 1");
 
 /**
  *
- * @param type $listID
- * @return type
+ * @param string $listID
+ * @return array
  */
 function bibliographie_publications_get_cached_list ($listID) {
 	if(strpos($listID, '..') === FALSE and strpos($listID, '/') === FALSE){
@@ -1087,6 +1089,204 @@ function bibliographie_publications_parse_title ($pub_id, array $options = array
 
 		if($options['linkProfile'] == true)
 			$return = '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showPublication&amp;pub_id='.((int) $publication->pub_id).'">'.$return.'</a>';
+	}
+
+	return $return;
+}
+
+/**
+ * Adds a topic to a list of publications.
+ * @staticvar string $addLink
+ * @param array $publications
+ * @param int $topic_id
+ * @return mixed False on error, an array otherwise.
+ */
+function bibliographie_publications_add_topic (array $publications, $topic_id) {
+	static $addLink = null;
+
+	$topic = bibliographie_topics_get_data($topic_id);
+
+	$return = false;
+
+	if(is_array($publications) and is_object($topic)){
+		$topicsPublications = bibliographie_topics_get_publications($topic->topic_id);
+
+		// Remove those from the list that have the topic already.
+		$publications = array_diff($publications, $topicsPublications);
+
+		if($addLink === null)
+			$addLink = DB::getInstance()->prepare('INSERT INTO `a2topicpublicationlink` (
+	`topic_id`,
+	`pub_id`
+) VALUES (
+	:topic_id,
+	:pub_id
+)');
+
+		$addedPublications = array();
+		if(count($publications) > 0){
+			foreach($publications as $pub_id){
+				if($addLink->execute(array (
+					'topic_id' => (int) $topic->topic_id,
+					'pub_id' => (int) $pub_id
+				))){
+					$addedPublications[] = $pub_id;
+					bibliographie_purge_cache('publication_'.((int) $pub_id));
+				}
+			}
+		}
+
+		$return = array (
+			'topic_id' => (int) $topic->topic_id,
+			'publicationsBefore' => $topicsPublications,
+			'publicationsToAdd' => $publications,
+			'publicationsAdded' => $addedPublications
+		);
+
+		if(count($addedPublications) > 0){
+			bibliographie_purge_cache('topic_'.((int) $topic->topic_id));
+			bibliographie_log('publications', 'addTopic', json_encode($return));
+		}
+	}
+
+	return $return;
+}
+
+/**
+ * Removes a topic from a list of publications.
+ * @staticvar string $removeLink
+ * @param array $publications
+ * @param int $topic_id
+ * @return mixed False on error, an array otherwise.
+ */
+function bibliographie_publications_remove_topic (array $publications, $topic_id) {
+	static $removeLink = null;
+
+	$topic = bibliographie_topics_get_data($topic_id);
+
+	$return = false;
+
+	if(is_object($topic)){
+		$topicsPublications = bibliographie_topics_get_publications($topic->topic_id);
+
+		// Only keep those publications to remove from the topic that are actually in the topic.
+		$publications = array_values(array_intersect($topicsPublications, $publications));
+
+		if($removeLink === null)
+			$removeLink = DB::getInstance()->prepare('DELETE FROM
+	`a2topicpublicationlink`
+WHERE
+	FIND_IN_SET(`pub_id`, :list) AND `topic_id` = :topic_id');
+
+		if($removeLink->execute(array(
+			'list' => array2csv($publications),
+			'topic_id' => (int) $topic->topic_id
+		)))
+			$return = array (
+				'topic_id' => (int) $topic->topic_id,
+				'publicationsBefore' => $topicsPublications,
+				'publicationsToRemove' => $publications
+			);
+
+		if(is_array($return)){
+			bibliographie_purge_cache('topic_'.((int) $topic->topic_id));
+			bibliographie_purge_cache('publication_');
+			bibliographie_log('publications', 'removeTopic', json_encode($return));
+		}
+	}
+
+	return $return;
+}
+
+/**
+ *
+ */
+function bibliographie_publications_add_tag (array $publications, $tag_id) {
+	static $addLink = null;
+
+	$tag = bibliographie_tags_get_data($tag_id);
+
+	$return = false;
+
+	if(is_object($tag)){
+		$tagsPublications = bibliographie_tags_get_publications($tag->tag_id);
+
+		$publications = array_diff($publications, $tagsPublications);
+
+		if($addLink === null)
+			$addLink = DB::getInstance()->prepare('INSERT INTO `a2publicationtaglink` (
+	`pub_id`,
+	`tag_id`
+) VALUES (
+	:pub_id,
+	:tag_id
+)');
+
+		$addedPublications = array();
+		if(count($publications) > 0){
+			foreach($publications as $pub_id){
+				if($addLink->execute(array (
+					'tag_id' => (int) $tag->tag_id,
+					'pub_id' => (int) $pub_id
+				))){
+					$addedPublications[] = $pub_id;
+					bibliographie_purge_cache('publication_'.((int) $pub_id));
+				}
+			}
+		}
+
+		$return = array (
+			'tag_id' => (int) $tag->tag_id,
+			'publicationsBefore' => $tagsPublications,
+			'publicationsToAdd' => $publications,
+			'publicationsAdded' => $addedPublications
+		);
+
+		if(count($addedPublications) > 0){
+			bibliographie_purge_cache('tag_'.((int) $tag->tag_id));
+			bibliographie_log('publications', 'addTag', json_encode($return));
+		}
+	}
+
+	return $return;
+}
+
+/**
+ *
+ */
+function bibliographie_publications_remove_tag (array $publications, $tag_id) {
+	static $removeLink = null;
+
+	$tag = bibliographie_tags_get_data($tag_id);
+
+	$return = false;
+
+	if(is_object($tag)){
+		$tagsPublications = bibliographie_tags_get_publications($tag->tag_id);
+
+		$publications = array_values(array_intersect($tagsPublications, $publications));
+
+		if($removeLink === null)
+			$removeLink = DB::getInstance()->prepare('DELETE FROM
+	`a2publicationtaglink`
+WHERE
+	FIND_IN_SET(`pub_id`, :list) AND `tag_id` = :tag_id');
+
+		if($removeLink->execute(array(
+			'list' => array2csv($publications),
+			'tag_id' => (int) $tag->tag_id
+		)))
+			$return = array (
+				'tag_id' => (int) $tag->tag_id,
+				'publicationsBefore' => $topicsPublications,
+				'publicationsToRemove' => $publications
+			);
+
+		if(is_array($return)){
+			bibliographie_purge_cache('tag_'.((int) $topic->topic_id));
+			bibliographie_purge_cache('publication_');
+			bibliographie_log('publications', 'removeTag', json_encode($return));
+		}
 	}
 
 	return $return;

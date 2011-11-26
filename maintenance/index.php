@@ -87,7 +87,7 @@ var bibliographie_maintenance_consistency_checks = <?php echo json_encode($bibli
 ?>
 
 	<tr id="topic_<?php echo $topic->topic_id?>">
-		<td><a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&topic_id=<?php echo (int) $topic->topic_id?>)?>"><?php echo bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true))?></td>
+		<td><a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/topics/?task=showTopic&amp;topic_id=<?php echo (int) $topic->topic_id?>)?>"><?php echo bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true))?></td>
 		<td><?php echo htmlspecialchars($topic->description)?></td>
 		<td><a href="javascript:;" onclick="bibliographie_maintenance_unlock_topic(<?php echo (int) $topic->topic_id?>"><?php echo bibliographie_icon_get('lock-open')?></a></td>
 	</tr>
@@ -185,7 +185,11 @@ $(function () {
 					'unlockTopic' => 'lock-open',
 					'editPublication' => 'page-white-edit',
 					'createPublication' => 'page-white-create',
-					'createTag' => 'tag-blue-add'
+					'createTag' => 'tag-blue-add',
+					'addTopic' => 'folder-add',
+					'removeTopic' => 'folder-delete',
+					'deleteAuthor' => 'user-delete',
+					'createPublication' => 'page-white-add'
 				);
 
 				foreach($logContent as $logRow){
