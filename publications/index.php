@@ -152,7 +152,7 @@ switch($_GET['task']){
 	<div class="unit">
 		<label for="tags" class="block">Tags</label>
 		<em style="float: right; text-align: right;">
-			<a href="javascript:;" onclick="bibliographie_publications_create_tag()"><span class="silk-icon silk-icon-tag-blue-add"></span> Add new tag</a><br />
+			<a href="javascript:;" onclick="bibliographie_tags_create_tag()"><span class="silk-icon silk-icon-tag-blue-add"></span> Add new tag</a><br />
 			<span id="tags_tagNotExisting"></em>
 		</em>
 		<input type="text" id="tags" name="tags" style="width: 100%" value="<?php echo htmlspecialchars($_POST['tags'])?>" />
@@ -168,7 +168,13 @@ switch($_GET['task']){
 
 <h3><?php echo bibliographie_icon_get('page-white-stack')?> Publications that will be affected</h3>
 <?php
-			bibliographie_publications_print_list($publications, BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.$_GET['list'], null, false);
+			bibliographie_publications_print_list(
+				$publications,
+				BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.$_GET['list'],
+				array(
+					'orderBy' => 'title'
+				)
+			);
 			bibliographie_charmap_print_charmap();
 ?>
 
@@ -242,7 +248,10 @@ $(function () {
 				while($publication = mysql_fetch_object($result))
 					$publications[] = $publication->pub_id;
 
-				bibliographie_publications_print_list($publications, BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($_GET['container']).'&amp;year='.((int) $_GET['year']).'&amp;piece='.htmlspecialchars($_GET['piece']), $_GET['bookmarkBatch']);
+				bibliographie_publications_print_list(
+					$publications,
+					BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($_GET['container']).'&amp;year='.((int) $_GET['year']).'&amp;piece='.htmlspecialchars($_GET['piece'])
+				);
 			}
 		}
 	break;
@@ -423,9 +432,9 @@ $(function () {
 					if(mb_strpos($requiredField, ',') !== false){
 						$fields = explode(',', $requiredField);
 						if(empty($_POST[$fields[0]]) and empty($_POST[$fields[1]]))
-							$errors[] = 'You have to fill '.$fields[0].' or '.$fields[1].'!';
+							echo '<p class="notice">You should have filled either '.$fields[0].' or '.$fields[1].'!</p>';
 					}elseif(empty($_POST[$requiredField]))
-						$errors[] = 'You did not fill required field '.$requiredField.'!';
+						echo '<p class="notice">You should have filled '.$requiredField.'!</p>';
 				}
 
 				$author = csv2array($_POST['author'], 'int');
@@ -550,12 +559,12 @@ $(function () {
 			}elseif(is_array($publication)){
 ?>
 
-<form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor&amp;pub_id=<?php echo ((int) $publication['pub_id'])?>" method="post">
+<form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor&amp;pub_id=<?php echo ((int) $publication['pub_id'])?>" method="post" onsubmit="return bibliographie_publications_check_required_fields();">
 <?php
 			}else{
 ?>
 
-<form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor" method="post">
+<form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor" method="post" onsubmit="return bibliographie_publications_check_required_fields();">
 <?php
 			}
 ?>
@@ -624,7 +633,7 @@ $(function () {
 
 		<label for="tags" class="block">Tags</label>
 		<em style="float: right; text-align: right;">
-			<a href="javascript:;" onclick="bibliographie_publications_create_tag()"><span class="silk-icon silk-icon-tag-blue-add"></span> Add new tag</a><br />
+			<a href="javascript:;" onclick="bibliographie_tags_create_tag()"><span class="silk-icon silk-icon-tag-blue-add"></span> Add new tag</a><br />
 			<span id="tags_tagNotExisting"></em>
 		</em>
 		<input type="text" id="tags" name="tags" style="width: 100%" value="<?php echo htmlspecialchars($_POST['tags'])?>" tabindex="8" />
@@ -739,6 +748,8 @@ $(function() {
 	$('#content input, #content textarea').charmap();
 
 	bibliographie_publications_check_title($('#title').val(), pub_id);
+
+
 });
 	/* ]]> */
 </script>
@@ -748,7 +759,7 @@ $(function() {
 	break;
 
 	case 'showPublication':
-		$publication = bibliographie_publications_get_data($_GET['pub_id'], 'assoc');
+		$publication = (array) bibliographie_publications_get_data($_GET['pub_id']);
 
 		if(is_array($publication)){
 			bibliographie_history_append_step('publications', 'Showing publication '.htmlspecialchars($publication['title']));
@@ -759,9 +770,26 @@ $(function() {
 </em>
 <h3><?php echo htmlspecialchars($publication['title'])?></h3>
 <?php
-			bibliographie_publications_print_list(array($publication['pub_id']), BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor&amp;pub_id='.((int) $publication['pub_id']), null, false, true);
+			bibliographie_publications_print_list(
+				array($publication['pub_id']),
+				BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor&amp;pub_id='.((int) $publication['pub_id']),
+				array(
+					'onlyPublications' => true
+				)
+			);
+?>
 
-			echo '<table class="dataContainer"><tr><th colspan="2">Further data of the publication</th></tr>';
+<table class="dataContainer">
+	<thead>
+		<tr>
+			<th colspan="2">
+				<a href="javascript:;" onclick="$('tbody').toggle('blind');" style="float: right;">Toggle information</a>
+				Extended information
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+<?php
 			foreach($bibliographie_publication_data as $dataKey => $dataLabel){
 				if(!empty($publication[$dataKey])){
 					if($dataKey == 'url')
@@ -820,7 +848,19 @@ $(function() {
 						echo '<tr><td><strong>'.$dataLabel.'</strong></td><td>'.$publication[$dataKey].'</td></tr>';
 				}
 			}
-			echo '</table>';
+?>
+
+	</tbody>
+</table>
+
+<script type="text/javascript">
+	/* <![CDATA[ */
+$(function () {
+	$('tbody').hide();
+});
+	/* ]]> */
+</script>
+<?php
 		}else
 			bibliographie_history_append_step('publications', 'Publication not existing');
 	break;
