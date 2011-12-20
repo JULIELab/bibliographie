@@ -289,7 +289,7 @@ function bibliographie_publications_get_data ($publication_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publication_'.((int) $publication_id).'_data.json'));
 
 		if($publication == null){
-			$publication = DB::getInstance()->prepare("SELECT * FROM `a2publication` WHERE `pub_id` = :pub_id");
+			$publication = DB::getInstance()->prepare("SELECT * FROM `".BIBLIOGRAPHIE_PREFIX."publication` WHERE `pub_id` = :pub_id");
 			$publication->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -472,7 +472,8 @@ function bibliographie_publications_parse_list (array $publications, $type = 'ht
  * @param array $publications
  * @param array $options
  */
-function bibliographie_publications_print_list (array $publications, $baseLink = '', array $options = array()){
+function bibliographie_publications_print_list (array $publications, $baseLink = '', array $options = array()) {
+	$return = (string) '';
 	if(count($publications) > 0){
 		if(!empty($_GET['orderBy']))
 			$options['orderBy'] = $_GET['orderBy'];
@@ -497,28 +498,28 @@ function bibliographie_publications_print_list (array $publications, $baseLink =
 
 		// Apply bookmark batch operations...
 		if($_GET['bookmarkBatch'] == 'add')
-			echo '<p class="notice">'.bibliographie_bookmarks_set_bookmarks_for_list($publications).' publications have been bookmarked!.</p>';
+			$return .= '<p class="notice">'.bibliographie_bookmarks_set_bookmarks_for_list($publications).' publications have been bookmarked!.</p>';
 		elseif($_GET['bookmarkBatch'] == 'remove')
-			echo '<p class="notice">The bookmarks of '.bibliographie_bookmarks_unset_bookmarks_for_list($publications).' publications were deleted!</p>';
+			$return .= '<p class="notice">The bookmarks of '.bibliographie_bookmarks_unset_bookmarks_for_list($publications).' publications were deleted!</p>';
 
-		$pageData = bibliographie_pages_print(count($publications), bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
+		$pageData = bibliographie_pages_calculate(count($publications));
+		$return .= bibliographie_pages_print($pageData, bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
 		$exportHash = bibliographie_publications_cache_list($publications);
 
-		if(!$options['onlyPublications']){
-			echo '<p class="bibliographie_operations">';
+		if(!$options['onlyPublications'] and count($publications) > 1){
+			$return .= '<p class="bibliographie_operations">';
 
-			if(count($publications) > 1){
-				echo '<span style="float: left">List contains <strong>'.count($publications).' publication</strong>(s)...</span>';
+			$return .= '<span style="float: left">List contains <strong>'.count($publications).' publication</strong>(s)...</span>';
 
-				if($options['bookmarkingLink']){
-					echo ' <a href="'.$baseLink.'&amp;bookmarkBatch=add"><em>'.bibliographie_icon_get('star').' Bookmark</em></a>';
-					echo ' <a href="'.$baseLink.'&amp;bookmarkBatch=remove"><em>'.bibliographie_icon_get('cross').' Unbookmark</em></a>';
-				}
+			if($options['bookmarkingLink']){
+				$return .= ' <a href="'.$baseLink.'&amp;bookmarkBatch=add"><em>'.bibliographie_icon_get('star').' Bookmark</em></a>';
+				$return .= ' <a href="'.$baseLink.'&amp;bookmarkBatch=remove"><em>'.bibliographie_icon_get('cross').' Unbookmark</em></a>';
 			}
 
-			echo ' <a href="javascript:;" onclick="bibliographie_publications_export_choose_type(\''.$exportHash.'\')"><em>'.bibliographie_icon_get('page-white-go').' Export</em></a>';
-			echo ' <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.$exportHash.'">'.bibliographie_icon_get('page-white-stack').' Batch</a>';
-			echo ' <span id="bibliographie_publications_order_'.$exportHash.'" class="bibliographie_publications_order_trigger">
+			$return .= ' <a href="javascript:;" onclick="bibliographie_publications_export_choose_type(\''.$exportHash.'\')"><em>'.bibliographie_icon_get('page-white-go').' Export</em></a>';
+			$return .= ' <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.$exportHash.'">'.bibliographie_icon_get('page-white-stack').' Batch</a>';
+
+			$return .= ' <span id="bibliographie_publications_order_'.$exportHash.'" class="bibliographie_publications_order_trigger">
 	'.bibliographie_icon_get('table').' Order
 	<span style="display: none" id="bibliographie_publications_order_'.$exportHash.'_selector" class="bibliographie_publications_order_selector bibliographie_layers_closing_by_click">
 		<a href="'.bibliographie_link_append_param($baseLink, 'orderBy=year').'">'.bibliographie_icon_get('clock').' Year</a>
@@ -526,36 +527,37 @@ function bibliographie_publications_print_list (array $publications, $baseLink =
 	</span>
 </span>';
 
-			echo '</p>';
+			$return .= '</p>';
 		}
 
 		$cutter = null;
 		for($i = $pageData['offset']; $i < $pageData['ceiling']; $i++){
 			$publication = (array) bibliographie_publications_get_data($publications[$i]);
 
-			if(!$options['onlyPublications']){
+			if(!$options['onlyPublications'] and count($publications) > 1){
 				if($options['orderBy'] == 'year' and $cutter != $publication['year']){
 					$cutter = $publication['year'];
-					echo '<h4>Publications in '.((int) $cutter).'</h4>';
+					$return .= '<h4>Publications in '.((int) $cutter).'</h4>';
 				}elseif($options['orderBy'] == 'title' and $cutter != mb_strtoupper(mb_substr($publication['title'], 0, 1))){
 					$cutter = mb_substr($publication['title'], 0, 1);
-					echo '<h4>Publications that start with '.$cutter.'</h4>';
+					$return .= '<h4>Publications that start with '.$cutter.'</h4>';
 				}
 			}
 
-			echo '<div id="publication_container_'.((int) $publication['pub_id']).'" class="bibliographie_publication';
+			$return .= '<div id="publication_container_'.((int) $publication['pub_id']).'" class="bibliographie_publication';
 			if(bibliographie_bookmarks_check_publication($publication['pub_id']))
-				echo ' bibliographie_publication_bookmarked';
-			echo '">'.bibliographie_bookmarks_print_html($publication['pub_id']);
-			echo bibliographie_publications_parse_data($publication['pub_id']).'</div>';
+				$return .= ' bibliographie_publication_bookmarked';
+			$return .= '">'.bibliographie_bookmarks_print_html($publication['pub_id']);
+			$return .= bibliographie_publications_parse_data($publication['pub_id']).'</div>';
 		}
 
-		if($pageData['pages'] > 1)
-			bibliographie_pages_print(count($publications), bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
+		$return .= bibliographie_pages_print($pageData, bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
 
 		bibliographie_bookmarks_print_javascript();
 	}else
-		echo '<p class="error">List of publications is empty...</p>';
+		$return .= '<p class="error">List of publications is empty...</p>';
+
+	return $return;
 }
 
 /**
@@ -604,14 +606,14 @@ function bibliographie_publications_get_persons ($publication_id, $is_editor = '
 			$_is_editor = 'Y';
 
 		if($persons === null)
-			$persons = DB::getInstance()->prepare("SELECT data.`author_id` FROM
-		`a2publicationauthorlink` link,
-		`a2author` data
+			$persons = DB::getInstance()->prepare('SELECT data.`author_id` FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` link,
+		`'.BIBLIOGRAPHIE_PREFIX.'author` data
 	WHERE
 		link.`pub_id` = :pub_id AND
 		link.`author_id` = data.`author_id` AND
 		link.`is_editor` = :is_editor
-	ORDER BY ".$_order);
+	ORDER BY '.$_order);
 
 		$persons->execute(array(
 			'pub_id' => (int) $publication->pub_id,
@@ -670,7 +672,7 @@ function bibliographie_publications_get_tags ($publication_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publication_'.((int) $publication->pub_id).'_tags.json'));
 
 		if($tags === null)
-			$tags = DB::getInstance()->prepare("SELECT `tag_id` FROM `a2publicationtaglink` WHERE `pub_id` = :pub_id");
+			$tags = DB::getInstance()->prepare('SELECT `tag_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` WHERE `pub_id` = :pub_id');
 
 		$tags->bindParam('pub_id', $publication->pub_id);
 		$tags->execute();
@@ -706,7 +708,7 @@ function bibliographie_publications_get_topics ($publication_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publication_'.((int) $publication->pub_id).'_topics.json'));
 
 		if($topics === null)
-			$topics = DB::getInstance()->prepare("SELECT `topic_id` FROM `a2topicpublicationlink` WHERE `pub_id` = :pub_id");
+			$topics = DB::getInstance()->prepare('SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` WHERE `pub_id` = :pub_id');
 		$topics->bindParam('pub_id', $publication->pub_id);
 		$topics->execute();
 
@@ -763,7 +765,7 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 	if($user_id == null)
 		$user_id = bibliographie_user_get_id ();
 
-	$return = mysql_query("INSERT INTO `a2publication` (
+	$return = mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publication` (
 	`pub_type`,
 	`user_id`,
 	`title`,
@@ -828,22 +830,22 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 	if(count($author) > 0 and !empty($author[0])){
 		$rank = (int) 1;
 		foreach($author as $author_id)
-			mysql_query("INSERT INTO `a2publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $author_id).", ".((int) $rank++).", 'N')");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $author_id).", ".((int) $rank++).", 'N')");
 	}
 
 	if(count($editor) > 0 and !empty($editor[0])){
 		$rank = (int) 1;
 		foreach($editor as $editor_id)
-			mysql_query("INSERT INTO `a2publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $editor_id).", ".((int) $rank++).", 'Y')");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $editor_id).", ".((int) $rank++).", 'Y')");
 	}
 
 	if(count($topics) > 0 and !empty($topics[0]))
 		foreach($topics as $topic_id)
-			mysql_query("INSERT INTO `a2topicpublicationlink` (`topic_id`, `pub_id`) VALUES (".((int) $topic_id).", ".((int) $pub_id).")");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."topicpublicationlink` (`topic_id`, `pub_id`) VALUES (".((int) $topic_id).", ".((int) $pub_id).")");
 
 	if(count($tags) > 0 and !empty($tags[0]))
 		foreach($tags as $tag_id)
-			mysql_query("INSERT INTO `a2publicationtaglink` (`pub_id`, `tag_id`) VALUES (".((int) $pub_id).", ".((int) $tag_id).")");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationtaglink` (`pub_id`, `tag_id`) VALUES (".((int) $pub_id).", ".((int) $tag_id).")");
 
 	$data = array(
 		'pub_id' => (int) $pub_id,
@@ -882,8 +884,8 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 		'tags' => $tags
 	);
 
-	bibliographie_purge_cache('publications');
-	bibliographie_purge_cache('tags');
+	bibliographie_cache_purge('publications');
+	bibliographie_cache_purge('tags');
 
 	if($return){
 		bibliographie_log('publications', 'createPublication', json_encode($data));
@@ -930,11 +932,11 @@ function bibliographie_publications_create_publication ($pub_type, array $author
  */
 function bibliographie_publications_edit_publication ($pub_id, $pub_type, array $author, array $editor, $title, $month, $year, $booktitle, $chapter, $series, $journal, $volume, $number, $edition, $publisher, $location, $howpublished, $organization, $institution, $school, $address, $pages, $note, $abstract, $userfields, $bibtex_id, $isbn, $issn, $doi, $url, array $topics, array $tags) {
 
-	mysql_query("DELETE FROM `a2publicationauthorlink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".(count(bibliographie_publications_get_authors($pub_id))+count(bibliographie_publications_get_editors($pub_id))));
-	mysql_query("DELETE FROM `a2topicpublicationlink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".count(bibliographie_publications_get_topics($pub_id)));
-	mysql_query("DELETE FROM `a2publicationtaglink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".count(bibliographie_publications_get_tags($pub_id)));
+	mysql_query("DELETE FROM `".BIBLIOGRAPHIE_PREFIX."publicationauthorlink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".(count(bibliographie_publications_get_authors($pub_id))+count(bibliographie_publications_get_editors($pub_id))));
+	mysql_query("DELETE FROM `".BIBLIOGRAPHIE_PREFIX."topicpublicationlink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".count(bibliographie_publications_get_topics($pub_id)));
+	mysql_query("DELETE FROM `".BIBLIOGRAPHIE_PREFIX."publicationtaglink` WHERE `pub_id` = ".((int) $pub_id)." LIMIT ".count(bibliographie_publications_get_tags($pub_id)));
 
-	$return = mysql_query("UPDATE `a2publication` SET
+	$return = mysql_query("UPDATE `".BIBLIOGRAPHIE_PREFIX."publication` SET
 	`pub_type` = '".mysql_real_escape_string(stripslashes($pub_type))."',
 	`title` = '".mysql_real_escape_string(stripslashes($title))."',
 	`month` = '".mysql_real_escape_string(stripslashes($month))."',
@@ -969,22 +971,22 @@ LIMIT 1");
 	if(count($author) > 0 and !empty($author[0])){
 		$rank = (int) 1;
 		foreach($author as $author_id)
-			mysql_query("INSERT INTO `a2publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $author_id).", ".((int) $rank++).", 'N')");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $author_id).", ".((int) $rank++).", 'N')");
 	}
 
 	if(count($editor) > 0 and !empty($editor[0])){
 		$rank = (int) 1;
 		foreach($editor as $editor_id)
-			mysql_query("INSERT INTO `a2publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $editor_id).", ".((int) $rank++).", 'Y')");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationauthorlink` (`pub_id`, `author_id`, `rank`, `is_editor`) VALUES (".((int) $pub_id).", ".((int) $editor_id).", ".((int) $rank++).", 'Y')");
 	}
 
 	if(count($topics) > 0 and !empty($topics[0]))
 		foreach($topics as $topic_id)
-			mysql_query("INSERT INTO `a2topicpublicationlink` (`topic_id`, `pub_id`) VALUES (".((int) $topic_id).", ".((int) $pub_id).")");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."topicpublicationlink` (`topic_id`, `pub_id`) VALUES (".((int) $topic_id).", ".((int) $pub_id).")");
 
 	if(count($tags) > 0 and !empty($tags[0]))
 		foreach($tags as $tag_id)
-			mysql_query("INSERT INTO `a2publicationtaglink` (`pub_id`, `tag_id`) VALUES (".((int) $pub_id).", ".((int) $tag_id).")");
+			mysql_query("INSERT INTO `".BIBLIOGRAPHIE_PREFIX."publicationtaglink` (`pub_id`, `tag_id`) VALUES (".((int) $pub_id).", ".((int) $tag_id).")");
 
 	$data = json_encode(array(
 		'pub_id' => (int) $pub_id,
@@ -1028,8 +1030,8 @@ LIMIT 1");
 		$return = $data;
 	}
 
-	bibliographie_purge_cache('publication_'.((int) $pub_id));
-	bibliographie_purge_cache('publications');
+	bibliographie_cache_purge('publication_'.((int) $pub_id));
+	bibliographie_cache_purge('publications');
 
 	return $return;
 }
@@ -1101,14 +1103,14 @@ function bibliographie_publications_sort (array $publications, $orderBy) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publications_'.$exportHash.'_ordered_'.$orderBy.'.json'));
 
 		if($orderPublications[$orderBy] === null)
-			$orderPublications = DB::getInstance()->prepare('SELECT `pub_id` FROM `a2publication`'.$completions[$orderBy]);
+			$orderPublications[$orderBy] = DB::getInstance()->prepare('SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`'.$completions[$orderBy]);
 
-		$orderPublications->execute(array(
+		$orderPublications[$orderBy]->execute(array(
 			'publications' => array2csv($publications)
 		));
 
-		if($orderPublications->rowCount() > 0)
-			$return = $orderPublications->fetchAll(PDO::FETCH_COLUMN, 0);
+		if($orderPublications[$orderBy]->rowCount() > 0)
+			$return = $orderPublications[$orderBy]->fetchAll(PDO::FETCH_COLUMN, 0);
 
 		if(BIBLIOGRAPHIE_CACHING){
 			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publications_'.$exportHash.'_ordered_'.$orderBy.'.json', 'w+');
@@ -1161,7 +1163,7 @@ function bibliographie_publications_add_topic (array $publications, $topic_id) {
 		$publications = array_diff($publications, $topicsPublications);
 
 		if($addLink === null)
-			$addLink = DB::getInstance()->prepare('INSERT INTO `a2topicpublicationlink` (
+			$addLink = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` (
 	`topic_id`,
 	`pub_id`
 ) VALUES (
@@ -1177,7 +1179,7 @@ function bibliographie_publications_add_topic (array $publications, $topic_id) {
 					'pub_id' => (int) $pub_id
 				))){
 					$addedPublications[] = $pub_id;
-					bibliographie_purge_cache('publication_'.((int) $pub_id));
+					bibliographie_cache_purge('publication_'.((int) $pub_id));
 				}
 			}
 		}
@@ -1190,7 +1192,8 @@ function bibliographie_publications_add_topic (array $publications, $topic_id) {
 		);
 
 		if(count($addedPublications) > 0){
-			bibliographie_purge_cache('topic_'.((int) $topic->topic_id));
+			bibliographie_cache_purge('topic_'.((int) $topic->topic_id));
+			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'addTopic', json_encode($return));
 		}
 	}
@@ -1220,7 +1223,7 @@ function bibliographie_publications_remove_topic (array $publications, $topic_id
 
 		if($removeLink === null)
 			$removeLink = DB::getInstance()->prepare('DELETE FROM
-	`a2topicpublicationlink`
+	`'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink`
 WHERE
 	FIND_IN_SET(`pub_id`, :list) AND `topic_id` = :topic_id');
 
@@ -1235,8 +1238,9 @@ WHERE
 			);
 
 		if(is_array($return)){
-			bibliographie_purge_cache('topic_'.((int) $topic->topic_id));
-			bibliographie_purge_cache('publication_');
+			bibliographie_cache_purge('topic_'.((int) $topic->topic_id));
+			bibliographie_cache_purge('publication_');
+			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'removeTopic', json_encode($return));
 		}
 	}
@@ -1260,7 +1264,7 @@ function bibliographie_publications_add_tag (array $publications, $tag_id) {
 		$publications = array_diff($publications, $tagsPublications);
 
 		if($addLink === null)
-			$addLink = DB::getInstance()->prepare('INSERT INTO `a2publicationtaglink` (
+			$addLink = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` (
 	`pub_id`,
 	`tag_id`
 ) VALUES (
@@ -1276,7 +1280,7 @@ function bibliographie_publications_add_tag (array $publications, $tag_id) {
 					'pub_id' => (int) $pub_id
 				))){
 					$addedPublications[] = $pub_id;
-					bibliographie_purge_cache('publication_'.((int) $pub_id));
+					bibliographie_cache_purge('publication_'.((int) $pub_id));
 				}
 			}
 		}
@@ -1289,7 +1293,8 @@ function bibliographie_publications_add_tag (array $publications, $tag_id) {
 		);
 
 		if(count($addedPublications) > 0){
-			bibliographie_purge_cache('tag_'.((int) $tag->tag_id));
+			bibliographie_cache_purge('tag_'.((int) $tag->tag_id));
+			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'addTag', json_encode($return));
 		}
 	}
@@ -1314,7 +1319,7 @@ function bibliographie_publications_remove_tag (array $publications, $tag_id) {
 
 		if($removeLink === null)
 			$removeLink = DB::getInstance()->prepare('DELETE FROM
-	`a2publicationtaglink`
+	`'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink`
 WHERE
 	FIND_IN_SET(`pub_id`, :list) AND `tag_id` = :tag_id');
 
@@ -1324,14 +1329,148 @@ WHERE
 		)))
 			$return = array (
 				'tag_id' => (int) $tag->tag_id,
-				'publicationsBefore' => $topicsPublications,
+				'publicationsBefore' => $tagsPublications,
 				'publicationsToRemove' => $publications
 			);
 
 		if(is_array($return)){
-			bibliographie_purge_cache('tag_'.((int) $topic->topic_id));
-			bibliographie_purge_cache('publication_');
+			bibliographie_cache_purge('tag_'.((int) $topic->topic_id));
+			bibliographie_cache_purge('publication_');
+			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'removeTag', json_encode($return));
+		}
+	}
+
+	return $return;
+}
+
+function bibliographie_publications_search_publications ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query);
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$publications = DB::getInstance()->prepare('SELECT
+	`pub_id`,
+	`title`,
+	`relevancy`
+FROM (
+	SELECT
+		`pub_id`,
+		`title`,
+		MATCH(`title`, `abstract`, `note`) AGAINST (:expanded_query) AS `relevancy`
+	FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'publication`
+) fullTextSearch
+WHERE
+	`relevancy` > 0
+ORDER BY
+	`relevancy` DESC,
+	`title`');
+		$publications->execute(array(
+			'expanded_query' => $expandedQuery
+		));
+		if($publications->rowCount() > 0)
+			$return = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
+		}
+	}
+
+	return $return;
+}
+
+function bibliographie_publications_search_books ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query);
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_books_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_books_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$books = DB::getInstance()->prepare('SELECT
+	`booktitle`,
+	`count`
+FROM (
+	SELECT
+		`booktitle`,
+		COUNT(*) AS `count`,
+		MATCH(`booktitle`) AGAINST (:expanded_query) AS `relevancy`
+	FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'publication`
+	GROUP
+		BY `booktitle`
+) fullTextSearch
+WHERE
+	`relevancy` > 0
+ORDER BY
+	`relevancy` DESC,
+	`booktitle`');
+		$books->execute(array(
+			'expanded_query' => $expandedQuery
+		));
+
+		if($books->rowCount() > 0)
+			$return = $books->fetchAll(PDO::FETCH_OBJ);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_books_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
+		}
+	}
+
+	return $return;
+}
+
+function bibliographie_publications_search_journals ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query);
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$books = DB::getInstance()->prepare('SELECT
+	`journal`,
+	`count`
+FROM (
+	SELECT
+		`journal`,
+		COUNT(*) AS `count`,
+		MATCH(`journal`) AGAINST (:expanded_query) AS `relevancy`
+	FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'publication`
+	GROUP
+		BY `journal`
+) fullTextSearch
+WHERE
+	`relevancy` > 0
+ORDER BY
+	`relevancy` DESC,
+	`journal`');
+		$books->execute(array(
+			'expanded_query' => $expandedQuery
+		));
+
+		if($books->rowCount() > 0)
+			$return = $books->fetchAll(PDO::FETCH_OBJ);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
 		}
 	}
 

@@ -17,7 +17,7 @@ function bibliographie_authors_create_author ($firstname, $von, $surname, $jr, $
 		$author_id = (int) $author_id;
 
 	if($author === null)
-		$author = DB::getInstance()->prepare('INSERT INTO `a2author` (
+		$author = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'author` (
 	`author_id`,
 	`firstname`,
 	`von`,
@@ -64,6 +64,7 @@ function bibliographie_authors_create_author ($firstname, $von, $surname, $jr, $
 		);
 
 		bibliographie_log('authors', 'createAuthor', json_encode($return));
+		bibliographie_cache_purge('search_');
 	}
 
 	return $return;
@@ -98,7 +99,7 @@ function bibliographie_authors_edit_author ($author_id, $firstname, $von, $surna
 		);
 
 		if($dataBefore != $dataAfter){
-			$updateAuthor = DB::getInstance()->prepare('UPDATE `a2author` SET
+			$updateAuthor = DB::getInstance()->prepare('UPDATE `'.BIBLIOGRAPHIE_PREFIX.'author` SET
 	`firstname` = :firstname,
 	`von` = :von,
 	`surname` = :surname,
@@ -131,7 +132,8 @@ LIMIT 1');
 
 			if($data['dataBefore'] != $data['dataAfter']){
 				bibliographie_log('authors', 'editAuthor', json_encode($data));
-				bibliographie_purge_cache('author_'.((int) $dataBefore['author_id']));
+				bibliographie_cache_purge('author_'.((int) $dataBefore['author_id']));
+				bibliographie_cache_purge('search_');
 			}
 
 			$return = $data;
@@ -160,7 +162,7 @@ function bibliographie_authors_get_data ($author_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/author_'.$author_id.'_data.json'));
 
 		if($author === null){
-			$author = DB::getInstance()->prepare("SELECT
+			$author = DB::getInstance()->prepare('SELECT
 	`author_id`,
 	`firstname`,
 	`von`,
@@ -170,9 +172,9 @@ function bibliographie_authors_get_data ($author_id) {
 	`url`,
 	`institute`
 FROM
-	`a2author`
+	`'.BIBLIOGRAPHIE_PREFIX.'author`
 WHERE
-	`author_id` = :author_id");
+	`author_id` = :author_id');
 			$author->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -261,8 +263,8 @@ function bibliographie_authors_get_publications ($author_id, $is_editor = 0) {
 
 		if($publications === null)
 			$publications = DB::getInstance()->prepare('SELECT publications.`pub_id` FROM
-	`a2publication` publications,
-	`a2publicationauthorlink` relations
+	`'.BIBLIOGRAPHIE_PREFIX.'publication` publications,
+	`'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` relations
 WHERE
 	publications.`pub_id` = relations.`pub_id` AND
 	relations.`author_id` = :author_id AND
@@ -339,9 +341,9 @@ function bibliographie_authors_get_tags ($author_id) {
 	link.`tag_id`,
 	COUNT(*) AS `count`
 FROM
-	`a2publicationtaglink` link
+	`'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` link
 LEFT JOIN (
-	SELECT * FROM `a2tags`
+	SELECT * FROM `'.BIBLIOGRAPHIE_PREFIX.'tags`
 )
 AS
 	data
@@ -373,6 +375,12 @@ ORDER BY
 	return $return;
 }
 
+/**
+ *
+ * @staticvar string $deletePerson
+ * @param type $author_id
+ * @return type
+ */
 function bibliographie_authors_delete ($author_id) {
 	static $deletePerson = null;
 
@@ -383,15 +391,66 @@ function bibliographie_authors_delete ($author_id) {
 		$publications = array_unique(array_merge(bibliographie_authors_get_publications($person->author_id, false), bibliographie_authors_get_publications($person->author_id, true)));
 		if(count($publications) == 0){
 			if($deletePerson === null)
-				$deletePerson = DB::getInstance()->prepare('DELETE FROM `a2author` WHERE `author_id` = :author_id LIMIT 1');
+				$deletePerson = DB::getInstance()->prepare('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'author` WHERE `author_id` = :author_id LIMIT 1');
 
 			$deletePerson->bindParam('author_id', $person->author_id);
 			$return = $deletePerson->execute();
 
 			if($return){
-				bibliographie_purge_cache('author_'.((int) $person->author_id));
+				bibliographie_cache_purge('author_'.((int) $person->author_id));
+				bibliographie_cache_purge('search_');
 				bibliographie_log('authors', 'deleteAuthor', json_encode(array('dataDeleted' => $person)));
 			}
+		}
+	}
+
+	return $return;
+}
+
+/**
+ *
+ * @param type $query
+ * @param type $expandedQuery
+ * @return type
+ */
+function bibliographie_authors_search_authors ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query, array('suffixes' => false, 'plurals' => false, 'umlauts' => true));
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_authors_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_authors_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$authors = DB::getInstance()->prepare('SELECT `author_id`, `surname`, `firstname`, `relevancy` FROM (
+	SELECT
+		`author_id`,
+		`surname`,
+		`firstname`,
+		(MATCH(`surname`, `firstname`) AGAINST (:expandedQuery)) AS `relevancy`
+	FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'author`
+) fullTextSearch
+WHERE
+	`relevancy` > 0
+ORDER BY
+	`relevancy` DESC,
+	`surname` ASC,
+	`firstname` ASC,
+	`author_id` ASC');
+
+		$authors->execute(array(
+			'expandedQuery' => $expandedQuery
+		));
+
+		if($authors->rowCount() > 0)
+			$return = $authors->fetchAll(PDO::FETCH_OBJ);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_authors_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
 		}
 	}
 

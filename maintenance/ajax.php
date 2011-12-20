@@ -6,10 +6,103 @@ require dirname(__FILE__).'/../init.php';
 $text = 'An error occurred!';
 $status = 'error';
 switch($_GET['task']){
+	case 'markUnsimilar':
+		$markUnsimilar = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'unsimilar_groups_of_authors` (`group`) VALUES (:group)');
+		if($markUnsimilar->execute(array(
+			'group' => $_GET['group']
+		)))
+			$status = 'success';
+
+		echo json_encode(array(
+			'status' => $status
+		));
+	break;
+
+	case 'mergePersons':
+		$into = bibliographie_authors_get_data($_GET['into']);
+		$delete = bibliographie_authors_get_data($_GET['delete']);
+
+		if(is_object($into) and is_object($delete) and $into->author_id != $delete->author_id){
+			$merge = bibliographie_maintenance_merge_authors($into->author_id, $delete->author_id);
+			if(is_array($merge))
+				echo '<span class="success"><strong>'.$merge['publicationsAffected'].' publication</strong>(s) have been relinked!</span><br />';
+
+			if(bibliographie_authors_delete($delete->author_id))
+				echo '<span class="success">Second author has been deleted!</span><br /><br />';
+			else
+				echo '<span class="error">'.bibliographie_authors_parse_data($delete->author_id, array('linkProfile' => true)).' could not have been deleted because he still has publications, that were not transferred to '.bibliographie_authors_parse_data($into->author_id, array('linkProfile' => true)).'!</span><br /><br />';
+
+			bibliographie_maintenance_print_author_profile($into->author_id, (int) $_GET['into_group']);
+		}else
+			echo '<span class="error">You did not provide two distinct authors!</span>';
+	break;
+
+	case 'positionPerson':
+		bibliographie_maintenance_print_author_profile($_GET['person_id'], (int) $_GET['group_id']);
+	break;
+
+	case 'similarPersons':
+		header('Content-Type: text/plain; charset=UTF-8');
+		$similarPersons = array();
+
+		$sounds = DB::getInstance()->prepare('SELECT
+	`sound`
+FROM (
+	SELECT `sound`, COUNT(*) AS `count` FROM (
+		SELECT CONCAT(SOUNDEX(`surname`), SOUNDEX(`firstname`)) AS `sound` FROM `'.BIBLIOGRAPHIE_PREFIX.'author`
+	) gimmeSound
+	GROUP BY
+		`sound`
+) gimmeCount
+WHERE
+	`count` > 1
+ORDER BY
+	`sound`');
+		$sounds->execute();
+
+		if($sounds->rowCount() > 0){
+			$sounds = $sounds->fetchAll(PDO::FETCH_COLUMN, 0);
+
+			$groups = DB::getInstance()->prepare('SELECT
+		`author_id`
+	FROM
+		`'.BIBLIOGRAPHIE_PREFIX.'author`
+	WHERE
+		CONCAT(SOUNDEX(`surname`), SOUNDEX(`firstname`)) = :sound
+	ORDER BY
+		`author_id`');
+			$groups->setFetchMode();
+
+			$unsimilarGroups = bibliographie_maintenance_get_unsimilar_groups();
+
+			foreach($sounds as $sound){
+				$groups->execute(array(
+					'sound' => $sound
+				));
+
+				if($groups->rowCount() > 0){
+					$group = $groups->fetchAll(PDO::FETCH_COLUMN, 0);
+
+					if(!in_array($group, $unsimilarGroups)){
+						foreach($group as $ix => $id)
+							$group[$ix] = array(
+								'id' => $id,
+								'name' => bibliographie_authors_parse_data($id, array('linkProfile' => true))
+							);
+
+						$similarPersons[] = $group;
+					}
+				}
+			}
+		}
+
+		echo json_encode($similarPersons);
+	break;
+
 	case 'consistencyChecks':
 		switch($_GET['consistencyCheckID']){
 			case 'authors_charsetArtifacts':
-				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `a2author` WHERE CONCAT(`firstname`, `von`, `surname`, `jr`) NOT REGEXP "^([abcdefghijklmnopqrstuvwxyzäöüßáéíóúàèìòùç[.full-stop.][.\'.][.hyphen.][.space.]]*)\$" ORDER BY `surname`, `firstname`');
+				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author` WHERE CONCAT(`firstname`, `von`, `surname`, `jr`) NOT REGEXP "^([abcdefghijklmnopqrstuvwxyzäöüßáéíóúàèìòùç[.full-stop.][.\'.][.hyphen.][.space.]]*)\$" ORDER BY `surname`, `firstname`');
 				$authors->setFetchMode(PDO::FETCH_OBJ);
 				$authors->execute();
 
@@ -38,14 +131,14 @@ switch($_GET['task']){
 				$authorIDs = array();
 				$relationIDs = array();
 
-				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `a2author`');
+				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author`');
 				$authors->setFetchMode(PDO::FETCH_OBJ);
 				$authors->execute();
 
 				if($authors->rowCount() > 0)
 					$authorIDs = $authors->fetchAll(PDO::FETCH_COLUMN, 0);
 
-				$relations = DB::getInstance()->prepare("SELECT `author_id` FROM `a2publicationauthorlink` GROUP BY `author_id`");
+				$relations = DB::getInstance()->prepare('SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` GROUP BY `author_id`');
 				$relations->setFetchMode(PDO::FETCH_OBJ);
 				$relations->execute();
 
@@ -76,32 +169,32 @@ switch($_GET['task']){
 				$publicationsArray = array();
 				$publicationLinksArray = array();
 
-				$publications = DB::getInstance()->prepare("SELECT `pub_id` FROM `a2publication` GROUP BY `pub_id`");
+				$publications = DB::getInstance()->prepare('SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication` GROUP BY `pub_id`');
 				$publications->setFetchMode(PDO::FETCH_OBJ);
 				$publications->execute();
 				if($publications->rowCount() > 0)
 					$publicationsArray = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
 
-				$publicationLinks = DB::getInstance()->prepare("SELECT `pub_id` FROM `a2topicpublicationlink` GROUP BY `pub_id`");
+				$publicationLinks = DB::getInstance()->prepare('SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` GROUP BY `pub_id`');
 				$publicationLinks->setFetchMode(PDO::FETCH_OBJ);
 				$publicationLinks->execute();
 				if($publicationLinks->rowCount() > 0)
 					$publicationLinksArray = $publicationLinks->fetchAll(PDO::FETCH_COLUMN, 0);
 
 				$publicationsList = array_values(array_diff($publicationsArray, $publicationLinksArray));
-				bibliographie_publications_print_list($publicationsList);
+				echo bibliographie_publications_print_list($publicationsList);
 			break;
 
 			case 'publications_withoutTag':
 				$publicationsArray = array();
 
-				$publications = DB::getInstance()->prepare('SELECT `pub_id` FROM `a2publication` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `a2publicationtaglink`)');
+				$publications = DB::getInstance()->prepare('SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink`)');
 				$publications->setFetchMode(PDO::FETCH_OBJ);
 				$publications->execute();
 
 				if($publications->rowCount() > 0){
 					$publicationsArray = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
-					bibliographie_publications_print_list($publicationsArray);
+					echo bibliographie_publications_print_list($publicationsArray);
 				}else
 					echo '<p class="success">No publications without a tag assignment were found.';
 			break;
@@ -110,12 +203,12 @@ switch($_GET['task']){
 				$topicsArray = array();
 				$topicLinksArray = array();
 
-				$topics = DB::getInstance()->prepare('SELECT `topic_id` FROM `a2topics` WHERE `topic_id` != 1');
+				$topics = DB::getInstance()->prepare('SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` WHERE `topic_id` != 1');
 				$topics->execute();
 				if($topics->rowCount() > 0)
 					$topicsArray = $topics->fetchAll(PDO::FETCH_COLUMN, 0);
 
-				$topicLinks = DB::getInstance()->prepare('SELECT `source_topic_id` FROM `a2topictopiclink`');
+				$topicLinks = DB::getInstance()->prepare('SELECT `source_topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink`');
 				$topicLinks->execute();
 				if($topicLinks->rowCount() > 0)
 					$topicLinksArray = $topicLinks->fetchAll(PDO::FETCH_COLUMN, 0);
@@ -134,13 +227,13 @@ switch($_GET['task']){
 			break;
 
 			case 'topics_doubledNames':
-				$doubledTopicNames = DB::getInstance()->prepare("SELECT * FROM (
-	SELECT *, COUNT(*) AS `count` FROM `a2topics` GROUP BY `name`
+				$doubledTopicNames = DB::getInstance()->prepare('SELECT * FROM (
+	SELECT *, COUNT(*) AS `count` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` GROUP BY `name`
 ) counts
 WHERE
 	`count` > 1
 ORDER BY
-	`name`");
+	`name`');
 				$doubledTopicNames->execute();
 
 				if($doubledTopicNames->rowCount() > 0){

@@ -178,12 +178,12 @@ function bibliographie_print_errors ($errors) {
  * Purge the cache for a specific pattern.
  * @param string $pattern Pattern for files that shall be deleted.
  */
-function bibliographie_purge_cache ($pattern) {
+function bibliographie_cache_purge ($pattern) {
 	if(mb_strpos($pattern, '..') === false and mb_strpos($pattern, '/') === false){
 		$files = scandir(BIBLIOGRAPHIE_ROOT_PATH.'/cache');
 		foreach($files as $file)
 			if(preg_match('~.*'.preg_quote($pattern, '~').'.*~', $file))
-				unlink(BIBLIOGRAPHIE_ROOT_PATH.'/cache/'.$file);
+				@unlink(BIBLIOGRAPHIE_ROOT_PATH.'/cache/'.$file);
 	}
 }
 
@@ -193,13 +193,13 @@ function bibliographie_purge_cache ($pattern) {
  * @param int $amountOfItems Amount of items that shall be orderd on pages.
  * @return array Array of parameters that are needed for page navigation.
  */
-function bibliographie_pages_print ($amountOfItems, $baseLink) {
+function bibliographie_pages_calculate ($items) {
 	/**
 	 * Set standard values.
 	 */
 	$page = 1;
 	$perPage = 100;
-	$pages = ceil($amountOfItems / $perPage);
+	$pages = ceil($items / $perPage);
 
 	/**
 	 * Adjust to user request.
@@ -212,33 +212,37 @@ function bibliographie_pages_print ($amountOfItems, $baseLink) {
 	 */
 	$offset = ($page - 1) * $perPage;
 
-	/**
-	 * Print page navigation.
-	 */
-	if($pages > 1){
-		echo '<p class="bibliographie_pages"><strong>Pages</strong>: ';
-		for($i = 1; $i <= $pages; $i++){
-			$virtualOffset = ($i - 1) * $perPage;
-
-			$virtualEnd = $virtualOffset + $perPage;
-			if($virtualEnd > $amountOfItems)
-				$virtualEnd = $amountOfItems;
-
-			if($i != $page)
-				echo '<a href="'.bibliographie_link_append_param($baseLink, 'page='.$i).'">['.($virtualOffset + 1).'-'.$virtualEnd.']</a> ';
-			else
-				echo '<strong>['.($virtualOffset + 1).'-'.$virtualEnd.']</strong> ';
-		}
-		echo '</p>';
-	}
-
 	return array (
+		'items' => $items,
 		'page' => $page,
 		'perPage' => $perPage,
 		'pages' => $pages,
 		'offset' => $offset,
-		'ceiling' => min($amountOfItems, $offset + $perPage)
+		'ceiling' => min($items, $offset + $perPage)
 	);
+}
+
+function bibliographie_pages_print ($pageData, $baseLink) {
+	$str = (string) '';
+
+	if($pageData['pages'] > 1){
+		$str .= '<p class="bibliographie_pages"><strong>Pages</strong>: ';
+		for($i = 1; $i <= $pageData['pages']; $i++){
+			$virtualOffset = ($i - 1) * $pageData['perPage'];
+
+			$virtualEnd = $virtualOffset + $pageData['perPage'];
+			if($virtualEnd > $pageData['items'])
+				$virtualEnd = $pageData['items'];
+
+			if($i != $pageData['page'])
+				$str .= '<a href="'.bibliographie_link_append_param($baseLink, 'page='.$i).'">['.($virtualOffset + 1).'-'.$virtualEnd.']</a> ';
+			else
+				$str .= '<strong>['.($virtualOffset + 1).'-'.$virtualEnd.']</strong> ';
+		}
+		$str .= '</p>';
+	}
+
+	return $str;
 }
 
 /**
@@ -256,7 +260,7 @@ function bibliographie_user_get_id ($name = null) {
 
 	if(empty($cache[$name])){
 		if($checkUser == null){
-			$checkUser = DB::getInstance()->prepare('SELECT `user_id`, `login` FROM `a2users` WHERE `login` = :login');
+			$checkUser = DB::getInstance()->prepare('SELECT `user_id`, `login` FROM `'.BIBLIOGRAPHIE_PREFIX.'users` WHERE `login` = :login');
 			$checkUser->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -288,7 +292,7 @@ function bibliographie_user_get_name ($user_id) {
 
 	if(is_numeric($user_id)){
 		if($checkUser === null){
-			$checkUser = DB::getInstance()->prepare('SELECT `login` FROM `a2users` WHERE `user_id` = :user_id LIMIT 1');
+			$checkUser = DB::getInstance()->prepare('SELECT `login` FROM `'.BIBLIOGRAPHIE_PREFIX.'users` WHERE `user_id` = :user_id LIMIT 1');
 			$checkUser->setFetchMode(PDO::FETCH_OBJ);
 		}
 

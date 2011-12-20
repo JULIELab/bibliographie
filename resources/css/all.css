@@ -68,6 +68,17 @@
 		padding: 10px;
 	}
 
+	h1, #header img {
+		font-size: 25px;
+		vertical-align: top;
+	}
+
+	#header a {
+		background: transparent;
+		color: #fff;
+		text-decoration: none;
+	}
+
 	#search {
 		float: right;
 		width: 40%;
@@ -158,6 +169,8 @@
 		background: #fff;
 		border: 1px solid #aaa;
 		color: #000;
+		font-family: sans-serif;
+		line-height: 1.5em;
 	}
 
 	.unit input.obligatory, .unit textarea.obligatory, .unit select.obligatory {
@@ -286,26 +299,26 @@
 		padding: 5px;
 	}
 
-	.bibliographie_note {
+	.bibliographie_notes_note {
+		background: #ffd;
 		border: 1px solid #aaa;
+		color: #000;
 		margin: 10px 0;
 		padding: 5px;
 	}
 
-	.bibliographie_note_publication_link {
+	.bibliographie_notes_publication_link {
 		border-top: 1px solid #aaa;
 		font-size: 0.7em;
 		margin-top: 5px;
 		padding-top: 5px;
-		text-align: right;
 	}
 
-	.bibliographie_publication_bookmarked {
-		background: #ffd;
-		color: #000;
+	.bibliographie_notes_publication_link a {
+		font-weight: normal;
 	}
 
-	.bibliographie_publication .bibliographie_bookmark_container {
+	.bibliographie_notes_actions, .bibliographie_bookmark_container {
 		background: #fafafa;
 		border-bottom: 1px solid #aaa;
 		border-left: 1px solid #aaa;
@@ -315,6 +328,11 @@
 		font-size: 0.8em;
 		margin: -5px -5px 5px 5px;
 		padding: 5px;
+	}
+
+	.bibliographie_publication_bookmarked {
+		background: #ffd;
+		color: #000;
 	}
 
 	#jQueryLoading {
@@ -331,7 +349,7 @@
 		width: 200px;
 	}
 
-	.searchResult {
+	.bibliographie_search_result {
 		background: #fafafa;
 		border: 1px solid #aaa;
 		color: #000;
@@ -421,6 +439,40 @@
 	.bibliographie_publications_order_selector a:hover {
 		background: #eee;
 		color: #000;
+	}
+
+	#bibliographie_maintenance_select_persons {
+		border: 1px solid #eee;
+		max-height: 500px;
+		overflow-y: scroll;
+		padding: 5px;
+		width: 45%;
+	}
+
+	.bibliographie_maintenance_person_groups {
+		background: #fafafa;
+		border: 1px solid #aaa;
+		color: #000;
+		margin: 5px 0;
+		padding: 5px;
+	}
+
+	#bibliographie_maintenance_merge_container {
+		float: right;
+		width: 50%;
+	}
+
+	#bibliographie_maintenance_merge_container div {
+		margin: 5px;
+		padding: 5px;
+	}
+
+	#bibliographie_maintenance_merge_into {
+		border: 2px solid #0a0;
+	}
+
+	#bibliographie_maintenance_merge_delete {
+		border: 2px solid #f00;
 	}
 }
 

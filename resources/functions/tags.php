@@ -8,7 +8,7 @@ function bibliographie_tags_create_tag ($tag) {
 	static $createTag = null;
 
 	if($createTag === null)
-		$createTag = DB::getInstance()->prepare('INSERT INTO `a2tags` (
+		$createTag = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'tags` (
 	`tag`
 ) VALUES (
 	:tag
@@ -25,6 +25,7 @@ function bibliographie_tags_create_tag ($tag) {
 		);
 
 		bibliographie_log('tags', 'createTag', json_encode($return));
+		bibliographie_cache_purge('search_');
 	}
 
 	return $return;
@@ -66,7 +67,7 @@ function bibliographie_tags_get_data ($tag_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/tag_'.((int) $tag_id).'_data.json'));
 
 		if($tag === null){
-			$tag = DB::getInstance()->prepare('SELECT * FROM `a2tags` WHERE `tag_id` = :tag_id');
+			$tag = DB::getInstance()->prepare('SELECT * FROM `'.BIBLIOGRAPHIE_PREFIX.'tags` WHERE `tag_id` = :tag_id');
 			$tag->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -107,15 +108,15 @@ function bibliographie_tags_get_publications ($tag_id) {
 		$return = array();
 
 		if($publications === null){
-			$publications = DB::getInstance()->prepare("SELECT publications.`pub_id`, publications.`year` FROM
-	`a2publicationtaglink` relations,
-	`a2publication` publications
+			$publications = DB::getInstance()->prepare('SELECT publications.`pub_id`, publications.`year` FROM
+	`'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` relations,
+	`'.BIBLIOGRAPHIE_PREFIX.'publication` publications
 WHERE
 	publications.`pub_id` = relations.`pub_id` AND
 	relations.`tag_id` = :tag_id
 ORDER BY
 	publications.`year` DESC,
-	publications.`pub_id` DESC");
+	publications.`pub_id` DESC');
 			$publications->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -255,4 +256,62 @@ function bibliographie_tags_populate_input ($tags) {
 	}
 
 	return $prePopulateTags;
+}
+
+function bibliographie_tags_search_tags ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= 1){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query);
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_tags_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_tags_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$tags = DB::getInstance()->prepare('SELECT
+	`tag_id`,
+	`tag`,
+	`relevancy`
+FROM (
+	SELECT
+		`tag_id`,
+		`tag`,
+		IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
+	FROM (
+		SELECT
+			`tag_id`,
+			`tag`,
+			MATCH(
+				`tag`
+			) AGAINST (
+				:expanded_query
+			) AS `innerRelevancy`
+		FROM
+			`'.BIBLIOGRAPHIE_PREFIX.'tags`
+
+	) fullTextSearch
+) likeMatching
+WHERE
+	`relevancy` > 0 AND
+	`tag` LIKE "%'.trim(DB::getInstance()->quote($query), '\'').'%"
+ORDER BY
+	`relevancy` DESC,
+	LENGTH(`tag`),
+	`tag` ASC,
+	`tag_id`');
+		$tags->execute(array(
+			'expanded_query' => $expandedQuery
+		));
+
+		if($tags->rowCount() > 0)
+			$return = $tags->fetchAll(PDO::FETCH_OBJ);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_tags_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
+		}
+	}
+
+	return $return;
 }

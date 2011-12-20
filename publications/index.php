@@ -132,7 +132,7 @@ switch($_GET['task']){
 	<h3><?php echo bibliographie_icon_get('folder')?> Topics</h3>
 	<div class="unit">
 		<label for="topics" class="block">Topics</label>
-		<div id="topicsContainer" style="background: #fff; border: 1px solid #aaa; color: #000; float: right; font-size: 0.8em; padding: 5px; width: 45%;"><em>Search for a topic in the left container!</em></div>
+		<div id="topicsContainer" style="background: #fff; border: 1px solid #aaa; color: #000; float: right; font-size: 0.8em; max-height: 200px; overflow-y: scroll; padding: 5px; width: 45%;"><em>Search for a topic in the left container!</em></div>
 
 		<input type="text" id="topics" name="topics" style="width: 100%" value="<?php echo htmlspecialchars($_POST['topics'])?>" />
 
@@ -168,7 +168,7 @@ switch($_GET['task']){
 
 <h3><?php echo bibliographie_icon_get('page-white-stack')?> Publications that will be affected</h3>
 <?php
-			bibliographie_publications_print_list(
+			echo bibliographie_publications_print_list(
 				$publications,
 				BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.$_GET['list'],
 				array(
@@ -196,6 +196,7 @@ $(function () {
 
 	case 'showContainer':
 		if(in_array($_GET['type'], array('journal', 'book'))){
+			bibliographie_history_append_step('publications', 'Showing '.$_GET['type'].' "'.htmlspecialchars($_GET['container']).'"');
 			$fields = array (
 				'journal',
 				'volume'
@@ -206,7 +207,7 @@ $(function () {
 					'number'
 				);
 
-			$result = mysql_query("SELECT `year`, `".$fields[0]."`, `".$fields[1]."`, COUNT(*) AS `count` FROM `a2publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' GROUP BY `".$fields[1]."` ORDER BY `year`, `volume`");
+			$result = mysql_query("SELECT `year`, `".$fields[0]."`, `".$fields[1]."`, COUNT(*) AS `count` FROM `".BIBLIOGRAPHIE_PREFIX."publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' GROUP BY `".$fields[1]."` ORDER BY `year`, `volume`");
 
 			if(mysql_num_rows($result) > 0){
 				echo '<h3>Chronology of '.htmlspecialchars($_GET['container']).'</h3>';
@@ -227,6 +228,7 @@ $(function () {
 
 	case 'showContainerPiece':
 		if(in_array($_GET['type'], array('journal', 'book'))){
+			bibliographie_history_append_step('publications', 'Showing '.$_GET['type'].' "'.htmlspecialchars($_GET['container']).'"/'.((int) $_GET['year']).'/'.((int) $_GET['piece']));
 			$fields = array (
 				'journal',
 				'volume'
@@ -237,7 +239,7 @@ $(function () {
 					'number'
 				);
 
-			$result = mysql_query("SELECT `pub_id` FROM `a2publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' AND `year` = ".((int) $_GET['year'])." AND `".$fields[1]."` = '".mysql_real_escape_string(stripslashes($_GET['piece']))."' ORDER BY `title`");
+			$result = mysql_query("SELECT `pub_id` FROM `".BIBLIOGRAPHIE_PREFIX."publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' AND `year` = ".((int) $_GET['year'])." AND `".$fields[1]."` = '".mysql_real_escape_string(stripslashes($_GET['piece']))."' ORDER BY `title`");
 
 			if(mysql_num_rows($result) > 0){
 	?>
@@ -248,7 +250,7 @@ $(function () {
 				while($publication = mysql_fetch_object($result))
 					$publications[] = $publication->pub_id;
 
-				bibliographie_publications_print_list(
+				echo bibliographie_publications_print_list(
 					$publications,
 					BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($_GET['container']).'&amp;year='.((int) $_GET['year']).'&amp;piece='.htmlspecialchars($_GET['piece'])
 				);
@@ -627,7 +629,7 @@ $(function () {
 
 	<div class="unit"><h4>Topics & tags</h4>
 		<label for="topics" class="block">Topics</label>
-		<div id="topicsContainer" style="background: #fff; border: 1px solid #aaa; color: #000; float: right; font-size: 0.8em; padding: 5px; width: 45%;"><em>Search for a topic in the left container!</em></div>
+		<div id="topicsContainer" style="background: #fff; border: 1px solid #aaa; color: #000; float: right; font-size: 0.8em; max-height: 200px; overflow-y: scroll; padding: 5px; width: 45%;"><em>Search for a topic in the left container!</em></div>
 		<input type="text" id="topics" name="topics" style="width: 100%" value="<?php echo htmlspecialchars($_POST['topics'])?>" tabindex="7" />
 		<br style="clear: both" />
 
@@ -767,10 +769,11 @@ $(function() {
 
 <em style="float: right">
 	<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor&amp;pub_id=<?php echo ((int) $publication['pub_id'])?>"><?php echo bibliographie_icon_get('page-white-edit')?> Edit</a>
+	<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/notes/?task=noteEditor&amp;pub_id=<?php echo (int) $publication['pub_id']?>"><?php echo bibliographie_icon_get('note-add')?> Add note</a>
 </em>
 <h3><?php echo htmlspecialchars($publication['title'])?></h3>
 <?php
-			bibliographie_publications_print_list(
+			echo bibliographie_publications_print_list(
 				array($publication['pub_id']),
 				BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor&amp;pub_id='.((int) $publication['pub_id']),
 				array(
@@ -852,6 +855,15 @@ $(function() {
 
 	</tbody>
 </table>
+
+<?php
+$notes = bibliographie_notes_get_notes_of_publication($publication['pub_id']);
+if(count($notes) > 0){
+	echo '<h3>Notes</h3>';
+	foreach($notes as $note)
+		echo bibliographie_notes_print_note($note->note_id);
+}
+?>
 
 <script type="text/javascript">
 	/* <![CDATA[ */

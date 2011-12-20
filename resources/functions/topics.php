@@ -17,7 +17,7 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
 	$return = false;
 
 	if($topic === null)
-		$topic = DB::getInstance()->prepare('INSERT INTO `a2topics` (
+		$topic = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topics` (
 	`topic_id`, `name`, `description`, `url`
 ) VALUES (
 	:topic_id, :name, :description, :url
@@ -36,7 +36,7 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
 	if($return and !empty($topic_id)){
 		if(count($topics) > 0){
 			if($createRelations == null)
-				$createRelations = DB::getInstance()->prepare('INSERT INTO `a2topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (:topic_id, :parent_topic)');
+				$createRelations = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (:topic_id, :parent_topic)');
 
 			foreach($topics as $parentTopic){
 				$createRelations->execute(array(
@@ -44,7 +44,7 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
 					'parent_topic' => (int) $parentTopic
 				));
 
-				bibliographie_purge_cache('topic_'.((int) $parentTopic).'_');
+				bibliographie_cache_purge('topic_'.((int) $parentTopic).'_');
 			}
 		}
 
@@ -58,6 +58,7 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
 
 		if(is_array($return))
 			bibliographie_log('topics', 'createTopic', json_encode($return));
+		bibliographie_cache_purge('search_');
 	}
 
 	return $return;
@@ -111,7 +112,7 @@ function bibliographie_topics_edit_topic ($topic_id, $name, $description, $url, 
 			$deleteTopicLinks = array_diff($dataBefore['topics'], $safeTopics);
 			if(count($deleteTopicLinks) > 0){
 				$deleteLink = DB::getInstance()->prepare('DELETE FROM
-	`a2topictopiclink`
+	`'.BIBLIOGRAPHIE_PREFIX.'topictopiclink`
 WHERE
 	`source_topic_id` = :topic_id AND
 	`target_topic_id` = :deleteTopicLink
@@ -122,7 +123,7 @@ LIMIT 1');
 						'topic_id' => (int) $dataBefore['topic_id'],
 						'deleteTopicLink' => (int) $deleteTopicLink
 					));
-					bibliographie_purge_cache('topic_'.$deleteTopicLink.'_');
+					bibliographie_cache_purge('topic_'.$deleteTopicLink.'_');
 				}
 			}
 
@@ -130,7 +131,7 @@ LIMIT 1');
 			 * Update the topic data itself if any change was made.
 			 */
 			if($name != $dataBefore['name'] or $description != $dataBefore['description'] or $url != $dataBefore['url']){
-				$updateData = DB::getInstance()->prepare('UPDATE `a2topics` SET
+				$updateData = DB::getInstance()->prepare('UPDATE `'.BIBLIOGRAPHIE_PREFIX.'topics` SET
 			`name`= :name,
 			`description` = :description,
 			`url` = :url
@@ -150,7 +151,7 @@ LIMIT 1');
 			 */
 			$addTopicLinks = array_diff($safeTopics, $dataBefore['topics']);
 			if(count($addTopicLinks) > 0){
-				$addLink = DB::getInstance()->prepare('INSERT INTO `a2topictopiclink` (
+				$addLink = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` (
 	`source_topic_id`,
 	`target_topic_id`
 ) VALUES (
@@ -163,7 +164,7 @@ LIMIT 1');
 							'topic_id' => (int) $dataBefore['topic_id'],
 							'addTopic' => (int) $addTopic
 						));
-						bibliographie_purge_cache('topic_'.((int) $addTopic).'_');
+						bibliographie_cache_purge('topic_'.((int) $addTopic).'_');
 					}
 				}
 			}
@@ -181,13 +182,14 @@ LIMIT 1');
 
 			if($data['dataBefore'] != $data['dataAfter']){
 				foreach($data['dataBefore']['topics'] as $topic_id)
-					bibliographie_purge_cache('topic_'.((int) $topic_id).'_');
+					bibliographie_cache_purge('topic_'.((int) $topic_id).'_');
 
 				bibliographie_log('topics', 'editTopic', json_encode($data));
-				bibliographie_purge_cache('topic_'.((int) $dataBefore['topic_id']).'_');
+				bibliographie_cache_purge('topic_'.((int) $dataBefore['topic_id']).'_');
 			}
 
 			DB::getInstance()->commit();
+			bibliographie_cache_purge('search_');
 			return $data;
 
 		} catch (PDOException $e) {
@@ -226,7 +228,7 @@ function bibliographie_topics_get_data ($topic_id, $type = 'object') {
 		}
 
 		if($topic === null)
-			$topic = DB::getInstance()->prepare("SELECT `topic_id`, `name`, `description`, `url` FROM `a2topics` WHERE `topic_id` = :topic_id");
+			$topic = DB::getInstance()->prepare('SELECT `topic_id`, `name`, `description`, `url` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` WHERE `topic_id` = :topic_id');
 
 		$topic->bindParam(':topic_id', $topic_id);
 		$topic->execute();
@@ -290,8 +292,8 @@ function bibliographie_topics_get_parent_topics ($topic_id, $recursive = false) 
 
 		if($parentTopics == null){
 			$parentTopics = DB::getInstance()->prepare('SELECT `target_topic_id` FROM
-	`a2topictopiclink` relations,
-	`a2topics` topics
+	`'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` relations,
+	`'.BIBLIOGRAPHIE_PREFIX.'topics` topics
 WHERE
 	relations.`source_topic_id` = :topic_id AND
 	relations.`target_topic_id` = topics.`topic_id`
@@ -345,7 +347,7 @@ function bibliographie_topics_get_subtopics ($topic_id, $recursive = false) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/topic_'.((int) $topic_id).'_'.((int) $recursive).'_subtopics.json'));
 
 		if($subtopics === null){
-			$subtopics = DB::getInstance()->prepare('SELECT `source_topic_id` FROM `a2topictopiclink` WHERE `target_topic_id` = :topic_id');
+			$subtopics = DB::getInstance()->prepare('SELECT `source_topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` WHERE `target_topic_id` = :topic_id');
 			$subtopics->setFetchMode(PDO::FETCH_OBJ);
 		}
 
@@ -388,17 +390,17 @@ function bibliographie_topics_parse_subtopics ($topic_id) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/topic_'.((int) $topic_id).'_subtopics_data.json'));
 
 		if($subtopics === null)
-			$subtopics = DB::getInstance()->prepare("SELECT `topic_id`, `name`, `amount_of_subtopics` FROM
-	`a2topictopiclink` relations,
-	`a2topics` topics
+			$subtopics = DB::getInstance()->prepare('SELECT `topic_id`, `name`, `amount_of_subtopics` FROM
+	`'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` relations,
+	`'.BIBLIOGRAPHIE_PREFIX.'topics` topics
 LEFT JOIN (
-	SELECT `target_topic_id`, COUNT(*) AS `amount_of_subtopics` FROM `a2topictopiclink` GROUP BY `target_topic_id`
+	SELECT `target_topic_id`, COUNT(*) AS `amount_of_subtopics` FROM `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` GROUP BY `target_topic_id`
 ) AS subtopics ON topics.`topic_id` = subtopics.`target_topic_id`
 WHERE
 	relations.`source_topic_id` = topics.`topic_id` AND
 	relations.`target_topic_id` = :topic_id
 ORDER BY
-	topics.`name`");
+	topics.`name`');
 
 		$subtopics->bindParam(':topic_id', $topic_id);
 		$subtopics->execute();
@@ -441,8 +443,8 @@ function bibliographie_topics_get_publications ($topic_id, $includeSubtopics = f
 
 		if($publications === null){
 			$publications = DB::getInstance()->prepare('SELECT publications.`pub_id`, publications.`year` FROM
-	`a2topicpublicationlink` relations,
-	`a2publication` publications
+	`'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` relations,
+	`'.BIBLIOGRAPHIE_PREFIX.'publication` publications
 WHERE
 	publications.`pub_id` = relations.`pub_id` AND
 	FIND_IN_SET(relations.`topic_id`, :set)
@@ -495,15 +497,15 @@ function bibliographie_topics_get_tags ($topic_id, $includeSubtopics = true) {
 
 		if(count($publications) > 0){
 			if($tags === null){
-				$tags = DB::getInstance()->prepare("SELECT
+				$tags = DB::getInstance()->prepare('SELECT
 	`tag_id`,
 	COUNT(*) AS `count`
 FROM
-	`a2publicationtaglink` link
+	`'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` link
 WHERE
 	FIND_IN_SET(link.`pub_id`, :set)
 GROUP BY
-	`tag_id`");
+	`tag_id`');
 				$tags->setFetchMode(PDO::FETCH_OBJ);
 			}
 
@@ -605,6 +607,11 @@ function bibliographie_topics_traverse ($topic_id, $depth = 1, &$walkedBy = arra
 		echo '<p class="error">Graph is empty!</p>';
 }
 
+/**
+ *
+ * @param type $topics
+ * @return type
+ */
 function bibliographie_topics_populate_input ($topics) {
 	$prePopulateTopics = array();
 	if(!empty($topics)){
@@ -620,4 +627,64 @@ function bibliographie_topics_populate_input ($topics) {
 	}
 
 	return $prePopulateTopics;
+}
+
+function bibliographie_topics_search_topics ($query, $expandedQuery = '') {
+	$return = array();
+
+	if(mb_strlen($query) >= 1){
+		if(empty($expandedQuery))
+			$expandedQuery = bibliographie_search_expand_query($query);
+
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json'))
+			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json'));
+
+		$topics = DB::getInstance()->prepare('SELECT
+	`topic_id`,
+	`name`,
+	`relevancy`
+FROM (
+	SELECT
+		`topic_id`,
+		`name`,
+		IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
+	FROM (
+		SELECT
+			`topic_id`,
+			`name`,
+			MATCH(
+				`name`,
+				`description`
+			) AGAINST (
+				:expanded_query
+			) AS `innerRelevancy`
+		FROM
+			`'.BIBLIOGRAPHIE_PREFIX.'topics`
+
+	) fullTextSearch
+) likeMatching
+WHERE
+	`relevancy` > 0 AND
+	`name` LIKE "%'.trim(DB::getInstance()->quote($query), '\'').'%"
+ORDER BY
+	`relevancy` DESC,
+	LENGTH(`name`),
+	`name` ASC,
+	`topic_id`');
+
+		$topics->execute(array(
+			'expanded_query' => $expandedQuery
+		));
+
+		if($topics->rowCount() > 0)
+			$return = $topics->fetchAll(PDO::FETCH_OBJ);
+
+		if(BIBLIOGRAPHIE_CACHING){
+			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
+			fwrite($cacheFile, json_encode($return));
+			fclose($cacheFile);
+		}
+	}
+
+	return $return;
 }
