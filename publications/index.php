@@ -207,13 +207,34 @@ $(function () {
 					'number'
 				);
 
-			$result = mysql_query("SELECT `year`, `".$fields[0]."`, `".$fields[1]."`, COUNT(*) AS `count` FROM `".BIBLIOGRAPHIE_PREFIX."publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' GROUP BY `".$fields[1]."` ORDER BY `year`, `volume`");
+			$containers = DB::getInstance()->prepare('SELECT
+	`year`,
+	`journal`,
+	`volume`,
+	`booktitle`,
+	`number`,
+	COUNT(*) AS `count`
+FROM
+	`'.BIBLIOGRAPHIE_PREFIX.'publication`
+WHERE
+	`'.$fields[0].'` = :container
+GROUP BY
+	`'.$fields[1].'`
+ORDER BY
+	`year`,
+	`'.$fields[1].'`');
+			$containers->execute(array(
+				'container' => $_GET['container']
+			));
 
-			if(mysql_num_rows($result) > 0){
+			if($containers->rowCount() > 0){
+				$result = $containers->fetchAll(PDO::FETCH_ASSOC);
+
 				echo '<h3>Chronology of '.htmlspecialchars($_GET['container']).'</h3>';
 				echo '<table class="dataContainer">';
-				echo '<tr><th></th><th>'.htmlspecialchars($fields[0]).'</th><th>Year & '.htmlspecialchars($fields[1]).'</th><th>Articles</th></tr>';
-				while($container = mysql_fetch_assoc($result)){
+				echo '<tr><th></th><th>'.htmlspecialchars($fields[0]).'</th><th>Year & '.htmlspecialchars($fields[1]).'</th><th># of articles</th></tr>';
+
+				foreach($result as $container){
 					echo '<tr>'
 						.'<td><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($container[$fields[0]]).'&amp;year='.((int) $container['year']).'&amp;piece='.htmlspecialchars($container[$fields[1]]).'">'.bibliographie_icon_get('page-white-stack').'</a></td>'
 						.'<td>'.htmlspecialchars($container[$fields[0]]).'</td>'
@@ -239,20 +260,34 @@ $(function () {
 					'number'
 				);
 
-			$result = mysql_query("SELECT `pub_id` FROM `".BIBLIOGRAPHIE_PREFIX."publication` WHERE `".$fields[0]."` = '".mysql_real_escape_string(stripslashes($_GET['container']))."' AND `year` = ".((int) $_GET['year'])." AND `".$fields[1]."` = '".mysql_real_escape_string(stripslashes($_GET['piece']))."' ORDER BY `title`");
+			$publications = DB::getInstance()->prepare('SELECT
+	`pub_id`
+FROM
+	`'.BIBLIOGRAPHIE_PREFIX.'publication`
+WHERE
+	`'.$fields[0].'` = :container AND
+	`year` = :year AND
+	`'.$fields[1].'` = :piece');
 
-			if(mysql_num_rows($result) > 0){
-	?>
+			$publications->execute(array(
+				'container' => $_GET['container'],
+				'year' => (int) $_GET['year'],
+				'piece' => $_GET['piece']
+			));
 
-	<h3>Publications in <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=showContainer&amp;type=<?php echo htmlspecialchars($_GET['type'])?>&amp;container=<?php echo htmlspecialchars($_GET['container'])?>"><?php echo htmlspecialchars($_GET['container'])?></a>, <?php echo ((int) $_GET['year']).' '.htmlspecialchars($_GET[$field[1]])?></h3>
-	<?php
-				$publications = array();
-				while($publication = mysql_fetch_object($result))
-					$publications[] = $publication->pub_id;
+			$publications = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
 
+			if(count($publications) > 0){
+?>
+
+<h3>Publications in <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=showContainer&amp;type=<?php echo htmlspecialchars($_GET['type'])?>&amp;container=<?php echo htmlspecialchars($_GET['container'])?>"><?php echo htmlspecialchars($_GET['container'])?></a>, <?php echo ((int) $_GET['year']).' '.htmlspecialchars($_GET[$field[1]])?></h3>
+<?php
 				echo bibliographie_publications_print_list(
 					$publications,
-					BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($_GET['container']).'&amp;year='.((int) $_GET['year']).'&amp;piece='.htmlspecialchars($_GET['piece'])
+					BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($_GET['container']).'&amp;year='.((int) $_GET['year']).'&amp;piece='.htmlspecialchars($_GET['piece']),
+					array(
+						'orderBy' => 'title'
+					)
 				);
 			}
 		}
@@ -450,10 +485,12 @@ $(function () {
 
 						$data = bibliographie_publications_edit_publication($publication['pub_id'], $_POST['pub_type'], $author, $editor, $_POST['title'], $_POST['month'], $_POST['year'], $_POST['booktitle'], $_POST['chapter'], $_POST['series'], $_POST['journal'], $_POST['volume'], $_POST['number'], $_POST['edition'], $_POST['publisher'], $_POST['location'], $_POST['howpublished'], $_POST['organization'], $_POST['institution'], $_POST['school'], $_POST['address'], $_POST['pages'], $_POST['note'], $_POST['abstract'], $_POST['userfields'], $_POST['bibtex_id'], $_POST['isbn'], $_POST['issn'], $_POST['doi'], $_POST['url'], $topics, $tags);
 
-						if($done){
+						if(is_array($data)){
 							echo '<p class="success">Publication has been edited!</p>';
 							echo 'You can <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showPublication&amp;pub_id='.((int) $data['pub_id']).'">view the created publication</a> or you can proceed by <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor">creating another</a> publication.';
-						}
+							$done = true;
+						}else
+							echo '<p class="error">An error occurred!</p>';
 					}else{
 						echo '<h3>Creating publication...</h3>';
 
@@ -768,8 +805,9 @@ $(function() {
 ?>
 
 <em style="float: right">
-	<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor&amp;pub_id=<?php echo ((int) $publication['pub_id'])?>"><?php echo bibliographie_icon_get('page-white-edit')?> Edit</a>
 	<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/notes/?task=noteEditor&amp;pub_id=<?php echo (int) $publication['pub_id']?>"><?php echo bibliographie_icon_get('note-add')?> Add note</a>
+	<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor&amp;pub_id=<?php echo ((int) $publication['pub_id'])?>"><?php echo bibliographie_icon_get('page-white-edit')?> Edit</a>
+	<a href="javascript:;" onclick="bibliographie_publications_confirm_delete(<?php echo (int) $publication['pub_id']?>)"><?php echo bibliographie_icon_get('page-white-delete')?> Delete</a>
 </em>
 <h3><?php echo htmlspecialchars($publication['title'])?></h3>
 <?php
