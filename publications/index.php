@@ -7,6 +7,32 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 <h2>Publications</h2>
 <?php
 switch($_GET['task']){
+	case 'deletePublication':
+		bibliographie_history_append_step('publications', 'Delete publication', false);
+		echo '<h3>Delete publication</h3>';
+		$publication = bibliographie_publications_get_data($_GET['pub_id']);
+		if(is_object($publication)){
+			$notes = DB::getInstance()->prepare('SELECT `pub_id`, `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'notes` WHERE `pub_id` = :pub_id GROUP BY `user_id`');
+			$notes->execute(array(
+				'pub_id' => (int) $publication->pub_id
+			));
+
+			if($notes->rowCount() == 0){
+				if(bibliographie_publications_delete_publication($publication->pub_id))
+					echo '<p class="success">Publication was deleted!</p>';
+				else
+					echo '<p class="error">An error occurred!</p>';
+			}else{
+				echo '<p class="error">Publication cannot be deleted since users have taken notes on this publication!</p><p class="notice">If you want to delete this publication anyway contact your administrator!</p>';
+				echo 'This is a list of users that have taken notes on this publication.<ul>';
+				foreach($notes->fetchAll(PDO::FETCH_OBJ) as $note)
+					echo '<li><strong>'.bibliographie_user_get_name($note->user_id).'</strong></li>';
+				echo '</ul>You can ask them to delete their notes and delete the publication afterwards.';
+			}
+		}else
+			echo '<p class="error">Publication was not found!</p>';
+		break;
+
 	case 'batchOperations':
 		$publications = bibliographie_publications_get_cached_list($_GET['list']);
 
@@ -798,9 +824,10 @@ $(function() {
 	break;
 
 	case 'showPublication':
-		$publication = (array) bibliographie_publications_get_data($_GET['pub_id']);
+		$publication = bibliographie_publications_get_data($_GET['pub_id']);
 
-		if(is_array($publication)){
+		if(is_object($publication)){
+			$publication = (array) $publication;
 			bibliographie_history_append_step('publications', 'Showing publication '.htmlspecialchars($publication['title']));
 ?>
 
@@ -911,8 +938,10 @@ $(function () {
 	/* ]]> */
 </script>
 <?php
-		}else
-			bibliographie_history_append_step('publications', 'Publication not existing');
+		}else{
+			bibliographie_history_append_step('publications', 'Publication does not exist', false);
+			echo '<p class="error">Publication was not found!</p>';
+		}
 	break;
 }
 

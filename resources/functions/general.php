@@ -12,7 +12,7 @@ class DB {
 	public static function getInstance () {
 		if(!self::$instance){
 			try {
-				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE.';charset=UTF-8', BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8') );
+				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE.';charset=UTF-8', BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 				self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			} catch (PDOException $e) {
 				bibliographie_exit('No database connection', 'Sorry, but we have no connection to the database!<br />'.$e->getMessage());
@@ -178,12 +178,18 @@ function bibliographie_print_errors ($errors) {
  * Purge the cache for a specific pattern.
  * @param string $pattern Pattern for files that shall be deleted.
  */
-function bibliographie_cache_purge ($pattern) {
-	if(mb_strpos($pattern, '..') === false and mb_strpos($pattern, '/') === false){
-		$files = scandir(BIBLIOGRAPHIE_ROOT_PATH.'/cache');
-		foreach($files as $file)
-			if(preg_match('~.*'.preg_quote($pattern, '~').'.*~', $file))
-				@unlink(BIBLIOGRAPHIE_ROOT_PATH.'/cache/'.$file);
+function bibliographie_cache_purge ($pattern = null) {
+	if(!empty($pattern)){
+		if(mb_strpos($pattern, '..') === false and mb_strpos($pattern, '/') === false){
+			$files = scandir(BIBLIOGRAPHIE_ROOT_PATH.'/cache');
+			foreach($files as $file)
+				if(preg_match('~.*'.preg_quote($pattern, '~').'.*~', $file))
+					@unlink(BIBLIOGRAPHIE_ROOT_PATH.'/cache/'.$file);
+		}
+	}else{
+		foreach(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/cache') as $file)
+			if($file != '.' and $file != '..')
+				unlink(BIBLIOGRAPHIE_ROOT_PATH.'/cache/'.$file);
 	}
 }
 
