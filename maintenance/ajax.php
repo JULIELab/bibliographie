@@ -115,7 +115,7 @@ ORDER BY
 					'Note to user' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'notes` WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`)',
 					'Attachment to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'attachments` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
 					'Attachment to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'attachments` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
-					'Locked topics' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'lockedTopics` WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
+					'Locked topics' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'lockedtopics` WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
 					'Publication to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'publication` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
 					'Topic to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'topics` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
 					'User to bookmark' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
@@ -124,10 +124,16 @@ ORDER BY
 
 				ksort($deadLinks);
 
-				echo '<table class="dataContainer"><tr><th>Subject</th><th>Occurrences</th></tr>';
-				foreach($deadLinks as $title => $query)
-					echo '<tr><td>'.$title.'</td><td>'.DB::getInstance()->exec($query).' dead links...</td></tr>';
-				echo '</table>';
+				try {
+					DB::getInstance()->beginTransaction();
+					echo '<table class="dataContainer"><tr><th>Subject</th><th>Occurrences</th></tr>';
+					foreach($deadLinks as $title => $query)
+						echo '<tr><td>'.$title.'</td><td>'.DB::getInstance()->exec($query).' dead links...</td></tr>';
+					echo '</table>';
+					DB::getInstance()->commit();
+				} catch (PDOException $e) {
+					echo '<p class="error">An error occured!</p>';
+				}
 			break;
 			case 'authors_charsetArtifacts':
 				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author` WHERE CONCAT(`firstname`, `von`, `surname`, `jr`) NOT REGEXP "^([abcdefghijklmnopqrstuvwxyzäöüßáéíóúàèìòùç[.full-stop.][.\'.][.hyphen.][.space.]]*)\$" ORDER BY `surname`, `firstname`');
@@ -277,19 +283,6 @@ ORDER BY
 					echo '<p class="success">Found no doubled topic names.</p>';
 			break;
 		}
-	break;
-	case 'unlockTopic':
-		$result = bibliographie_maintenance_unlock_topic($_GET['topic_id']);
-		$text = 'The topic could not be unlocked!';
-		if($result){
-			$text = 'The topic has been unlocked!';
-			$status = 'success';
-		}
-
-		echo json_encode(array(
-			'status' => $status,
-			'text' => $text
-		));
 	break;
 }
 
