@@ -262,7 +262,7 @@ ORDER BY
 
 				foreach($result as $container){
 					echo '<tr>'
-						.'<td><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($container[$fields[0]]).'&amp;year='.((int) $container['year']).'&amp;piece='.htmlspecialchars($container[$fields[1]]).'">'.bibliographie_icon_get('page-white-stack').'</a></td>'
+						.'<td><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainerPiece&amp;type='.htmlspecialchars($_GET['type']).'&amp;container='.htmlspecialchars($container[$fields[0]]).'&amp;year='.((int) $container['year']).'&amp;piece='.htmlspecialchars($container[$fields[1]]).'">'.bibliographie_icon_get('page-white-stack', 'Show publications').'</a></td>'
 						.'<td>'.htmlspecialchars($container[$fields[0]]).'</td>'
 						.'<td>'.$container['year'].' '.$container[$fields[1]].'</td>'
 						.'<td>'.$container['count'].' article(s)</td>'
@@ -447,6 +447,7 @@ $(function () {
 	<select id="source" name="source" style="width: 60%;">
 		<option value="bibtexInput">BibTex direct input</option>
 		<option value="bibtexRemote">BibTex remote file</option>
+		<option value="pubmed">PubMed</option>
 <?php
 		if(BIBLIOGRAPHIE_ISBNDB_KEY != '')
 			echo '<option value="isbndb">ISBNDB.com</option>';
@@ -787,7 +788,7 @@ $(function () {
 <script type="text/javascript">
 	/* <![CDATA[ */
 <?php
-			echo 'var pub_id = ';
+			echo 'var bibliographie_publications_editor_pub_id = ';
 			if(is_array($publication))
 				echo $publication['pub_id'];
 			else
@@ -800,7 +801,7 @@ $(function() {
 	});
 
 	$('#title').bind('mouseup keyup', function (event) {
-		delayRequest('bibliographie_publications_check_title', Array(event.target.value, pub_id));
+		delayRequest('bibliographie_publications_check_title', Array(event.target.value));
 	});
 
 	bibliographie_authors_input_tokenized('author', <?php echo json_encode($prePopulateAuthor)?>);
@@ -812,7 +813,7 @@ $(function() {
 
 	$('#content input, #content textarea').charmap();
 
-	bibliographie_publications_check_title($('#title').val(), pub_id);
+	bibliographie_publications_check_title($('#title').val());
 
 
 });

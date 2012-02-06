@@ -111,8 +111,8 @@ function bibliographie_topics_check_name (name, topic_id) {
 
 				$.each(json.results, function (key, value) {
 					str += '<div>';
-					str += '<a href="'+bibliographie_web_root+'/topics/?task=showTopic&amp;topic_id='+value.topic_id+'"><span class="silk-icon silk-icon-folder"></a>';
-					str += ' <a href="'+bibliographie_web_root+'/topics/?task=topicEditor&amp;topic_id='+value.topic_id+'"><span class="silk-icon silk-icon-folder-edit"></a>';
+					str += '<a href="'+bibliographie_web_root+'/topics/?task=showTopic&amp;topic_id='+value.topic_id+'"><span class="silk-icon silk-icon-folder" title="Show topic"></a>';
+					str += ' <a href="'+bibliographie_web_root+'/topics/?task=topicEditor&amp;topic_id='+value.topic_id+'"><span class="silk-icon silk-icon-folder-edit" title="Edit topic"></a>';
 					str += ' <strong>'+value.name+'</strong>';
 					if(value.description != '' && value.description != null)
 						str += ' <em>'+value.description+'</em>';
@@ -124,6 +124,31 @@ function bibliographie_topics_check_name (name, topic_id) {
 				$('#similarNameContainer').html(str);
 			}else
 				$('#similarNameContainer').hide();
+		}
+	})
+}
+
+function bibliographie_topics_confirm_delete (topic_id) {
+	$.ajax({
+		'url': bibliographie_web_root+'/topics/ajax.php',
+		'data': {
+			'task': 'deleteTopicConfirm',
+			'topic_id': topic_id
+		},
+		'success': function (html) {
+			$('#dialogContainer').append(html);
+			$('#deleteTopicConfirm_'+topic_id).dialog({
+				'width': 400,
+				'buttons': {
+					'cancel': function () {
+						$(this).dialog('close');
+					}
+				},
+				'close': function () {
+					$(this).remove();
+				},
+				'modal': true
+			})
 		}
 	})
 }
