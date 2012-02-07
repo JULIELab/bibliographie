@@ -200,6 +200,41 @@ function bibliographie_publications_export_choose_type (exportList) {
 				width: 500,
 				modal: true,
 				buttons: {
+					'Export': function () {
+						if($('#exportTarget').val() == 'rtf')
+							window.location = bibliographie_web_root+'/publications/ajax.php?task=exportPublications&target='+$('#exportTarget').val()+'&exportList='+exportList;
+						else
+							bibliographie_publications_export(exportList, $('#exportTarget').val(), $('#exportStyle').val());
+
+						$(this).dialog('close');
+					},
+					'Close': function () {
+						$(this).dialog('close');
+					}
+				},
+				close: function () {
+					$(this).remove();
+				}
+			});
+		}
+	})
+}
+
+function bibliographie_publications_export (exportList, exportTarget, exportStyle) {
+	$.ajax({
+		'url': bibliographie_web_root+'/publications/ajax.php',
+		'data': {
+			'task': 'exportPublications',
+			'target': exportTarget,
+			'exportList': exportList,
+			'exportStyle': exportStyle
+		},
+		'success': function (html) {
+			$('#dialogContainer').append(html);
+			$('#bibliographie_export_'+exportList).dialog({
+				'width': 1000,
+				'modal': true,
+				'buttons': {
 					'Close': function () {
 						$(this).dialog('close');
 					}
@@ -217,6 +252,7 @@ function bibliographie_publications_export_choose_type (exportList) {
  ****************************************/
 
 function bibliographie_publications_fetch_data_proceed (data) {
+	setLoading('#fetchData_container');
 	$.ajax({
 		url: bibliographie_web_root+'/publications/ajax.php?task=fetchData_proceed',
 		data: data,

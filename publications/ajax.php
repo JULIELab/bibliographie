@@ -28,10 +28,17 @@ switch($_GET['task']){
 			$title = 'Choose export format';
 			$text = '<h3>Export publications</h3>
 <p class="notice">You\'re about to export '.count($publications).' publication(s). Please choose the format that you want to export into.</p>
-<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/ajax.php?task=exportPublications&amp;target=bibTex&amp;exportList='.htmlspecialchars($_GET['exportList']).'" onclick="$(\'exportChooseType_'.htmlspecialchars($_GET['exportList']).'\').dialog(\'close\')">'.bibliographie_icon_get('page-white-actionscript').' BibTex</a><br />
-<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/ajax.php?task=exportPublications&amp;target=rtf&amp;exportList='.htmlspecialchars($_GET['exportList']).'" onclick="$(\'exportChooseType_'.htmlspecialchars($_GET['exportList']).'\').dialog(\'close\')">'.bibliographie_icon_get('page-white-word').' RTF</a><br />
-<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/ajax.php?task=exportPublications&amp;target=html&amp;exportList='.htmlspecialchars($_GET['exportList']).'" onclick="$(\'exportChooseType_'.htmlspecialchars($_GET['exportList']).'\').dialog(\'close\')">'.bibliographie_icon_get('page-white-code').' HTML</a><br />
-<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/ajax.php?task=exportPublications&amp;target=text&amp;exportList='.htmlspecialchars($_GET['exportList']).'" onclick="$(\'exportChooseType_'.htmlspecialchars($_GET['exportList']).'\').dialog(\'close\')">'.bibliographie_icon_get('page-white-text').' Text</a>';
+<label for="exportTarget" class="block">Format</label>
+<select id="exportTarget" name="exportTarget" style="width: 100%">
+	<option value="bibTex">BibTeX</option>
+	<option value="rtf">RTF</option>
+	<option value="html">HTML</option>
+	<option value="text">Text</option>
+</select>
+<label for="exportStyle" class="block">Style</label>
+<select id="exportStyle" name="exportStyle" style="width: 100%">
+	<option value="standard">Standard</option>
+</select>';
 		}
 
 		bibliographie_dialog_create('exportChooseType_'.htmlspecialchars($_GET['exportList']), $title, $text);
@@ -42,7 +49,7 @@ switch($_GET['task']){
 
 		if(is_array($publications) and count($publications) > 0){
 			if(in_array($_GET['target'], array('html', 'text'))){
-				bibliographie_publications_parse_list($publications, $_GET['target']);
+				bibliographie_dialog_create('bibliographie_export_'.$_GET['exportList'], 'Exported publications', '<div style="font: size: 15px; max-height: 600px; overflow-y: scroll;">'.bibliographie_publications_parse_list($publications, $_GET['target']).'</div>');
 			}else{
 				$publications = array2csv($publications);
 
@@ -117,8 +124,7 @@ WHERE
 						}
 
 						if($_GET['target'] == 'bibTex'){
-							header('Content-Type: text/plain; charset=UTF-8');
-							echo $bibtex->bibtex();
+							bibliographie_dialog_create('bibliographie_export_'.$_GET['exportList'], 'Exported publications', '<div style="font: size: 15px; max-height: 600px; overflow-y: scroll;">'.nl2br($bibtex->bibtex()).'</div>');
 						}elseif($_GET['target'] == 'rtf'){
 							$rtf = $bibtex->rtf();
 							$file = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/export_'.md5($rtf).'.rtf', 'w+');
@@ -181,141 +187,70 @@ WHERE
 	break;
 
 	case 'fetchData_proceed':
-		if($_POST['source'] == 'bibtexInput'){
-?>
-
-<strong>1. step</strong> Selected source <em>BibTex input</em>... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
+		if($_POST['source'] == 'bibtexInput' or $_POST['source'] == 'bibtexRemote'){
 			if($_POST['step'] == '1'){
+				if($_POST['source'] == 'bibtexInput'){
 ?>
 
-<strong>2. step</strong> Input BibTex string... <span class="silk-icon silk-icon-hourglass"></span>
-<label for="bibtexInput" class="block">BibTex input</label>
+<label for="bibtexInput" class="block"><?php echo bibliographie_icon_get('page-white-code')?> Input text containing BibTeX!</label>
 <textarea id="bibtexInput" name="bibtexInput" rows="20" cols="20" style="width: 100%;"></textarea>
-<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexInput', 'step': '2', 'bibtexInput': $('#bibtexInput').val()})">Proceed & parse!</button>
+<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexInput', 'step': '2', 'bibtexInput': $('#bibtexInput').val()})">Parse!</button>
 <?php
-			}elseif($_POST['step'] == '2'){
-				if(!empty($_POST['bibtexInput'])){
-?>
-
-<strong>2. step</strong> Input BibTex string... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
-					$bibtex = new Structures_BibTex(array(
-						'stripDelimiter' => true,
-						'validate' => true,
-						'unwrap' => true,
-						//'removeCurlyBraces' => true,
-						'extractAuthors' => true
-					));
-					$bibtex->loadContent(strip_tags($_POST['bibtexInput']));
-
-					if($bibtex->parse() and count($bibtex->data) > 0){
-?>
-
-<strong>3. step</strong> Parsing BibTex... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
-						foreach($bibtex->data as $key => $row){
-							$bibtex->data[$key]['pub_type'] = $row['entryType'];
-							$bibtex->data[$key]['bibtex_id'] = $row['cite'];
-						}
-
-						$_SESSION['publication_prefetchedData_unchecked'] = $bibtex->data;
-?>
-
-<p>
-	<span class="success">Parsing of your input was successful!</span>
-	Your input contained <strong><?php echo count($bibtex->data)?></strong> entry/entries.</strong><br />
-	You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.
-</p>
-<?php
-					}else{
-?>
-
-<strong>3. step</strong> Parsing BibTex... <span class="silk-icon silk-icon-cross"></span>
-<p class="error">There was an error while parsing!</p>
-<?php
-					}
 				}else{
 ?>
 
-<strong>2. step</strong> Input BibTex string... <span class="silk-icon silk-icon-cross"></span>
-<p class="error">Your input was empty!</p>
+<label for="bibtexInput" class="block"><?php echo bibliographie_icon_get('page-white-code')?> Input URL to text containg BibTeX</label>
+<input id="bibtexInput" name="bibtexInput" style="width: 100%" />
+<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexRemote', 'step': '2', 'bibtexInput': $('#bibtexInput').val()})">Parse!</button>
 <?php
 				}
-			}
-		}elseif($_POST['source'] == 'bibtexRemote'){
-			?>
-
-<strong>1. step</strong> Selected source <em>BibTex remote</em>... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
-			if($_POST['step'] == '1'){
-?>
-
-<strong>2. step</strong> Input BibTex URL... <span class="silk-icon silk-icon-hourglass"></span>
-<label for="bibtexRemote" class="block">BibTex input</label>
-<input id="bibtexRemote" name="bibtexRemote" style="width: 100%" />
-<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexRemote', 'step': '2', 'bibtexRemote': $('#bibtexRemote').val()})">Proceed & parse!</button>
-<?php
 			}elseif($_POST['step'] == '2'){
-				if(!empty($_POST['bibtexRemote']) and is_url($_POST['bibtexRemote'])){
+				if(empty($_POST['bibtexInput'])){
 ?>
 
-<strong>2. step</strong> Input BibTex URL... <span class="silk-icon silk-icon-tick"></span><br />
+<p class="error">Your input was empty! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexInput', 'step': '1'})">start again</a>!</p>
 <?php
-					$bibtex = new Structures_BibTex(array(
-						'stripDelimiter' => true,
-						'validate' => true,
-						'unwrap' => true,
-						//'removeCurlyBraces' => true,
-						'extractAuthors' => true
-					));
-					$bibtex->loadContent(strip_tags(file_get_contents($_POST['bibtexRemote'])));
+					break;
+				}
 
-					if($bibtex->parse() and count($bibtex->data) > 0){
-?>
+				/**
+				 * Create new instance of parser.
+				 */
+				$bibtex = new Structures_BibTex(array(
+					'stripDelimiter' => true,
+					'validate' => true,
+					'unwrap' => true,
+					'extractAuthors' => true
+				));
+				if($_POST['source'] == 'bibtexInput')
+					$bibtex->loadContent(strip_tags($_POST['bibtexInput']));
+				else
+					$bibtex->loadContent(strip_tags(file_get_contents($_POST['bibtexInput'])));
 
-<strong>3. step</strong> Parsing BibTex... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
-						foreach($bibtex->data as $key => $row){
-							$bibtex->data[$key]['pub_type'] = $row['entryType'];
-							$bibtex->data[$key]['bibtex_id'] = $row['cite'];
-						}
-
-						$_SESSION['publication_prefetchedData_unchecked'] = $bibtex->data;
-?>
-
-<p>
-	<span class="success">Parsing of your input was successful!</span>
-	Your input contained <strong><?php echo count($bibtex->data)?></strong> entry/entries.</strong><br />
-	You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.
-</p>
-<?php
-					}else{
-?>
-
-<strong>3. step</strong> Parsing BibTex... <span class="silk-icon silk-icon-cross"></span>
-<p class="error">There was an error while parsing!</p>
-<?php
+				if($bibtex->parse() and count($bibtex->data) > 0){
+					foreach($bibtex->data as $key => $row){
+						$bibtex->data[$key]['pub_type'] = $row['entryType'];
+						$bibtex->data[$key]['bibtex_id'] = $row['cite'];
+						$bibtex->data[$key]['note'] = 'Imported from '.$_POST['source'].'...';
 					}
+
+					$_SESSION['publication_prefetchedData_unchecked'] = $bibtex->data;
+?>
+
+<p class="success">Parsing of your input was successful!</p>
+<p>Your input contained <strong><?php echo count($bibtex->data)?></strong> entries. You can now proceed and check your fetched entries!</p>
+<div class="submit"><button onclick="window.location = '<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData';">Check fetched data</button></div>
+<?php
 				}else{
 ?>
 
-<strong>2. step</strong> Input BibTex URL... <span class="silk-icon silk-icon-cross"></span>
-<p class="error">Your input was empty!</p>
+<p class="error">There was an error while parsing! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'bibtexInput', 'step': '1'})">start again</a>!</p>
 <?php
 				}
 			}
 		}elseif($_POST['source'] == 'isbndb'){
-?>
-
-<strong>1. step</strong> Selected source <em>ISBNDB</em>... <span class="silk-icon silk-icon-tick"></span><br />
-<?php
 			if($_POST['step'] == '1'){
 ?>
-
-<strong>2. step</strong> Input query...<span class="silk-icon silk-icon-hourglass"></span>
-
-<br />
 
 <div style="float: right; width: 50%">
 	<label for="value" class="block">Query</label>
@@ -333,12 +268,6 @@ WHERE
 <button onclick="bibliographie_publications_fetch_data_proceed({'source': 'isbndb', 'step': '2', 'key': $('#key').val(), 'value': $('#value').val()})">Search</button>
 <?php
 			}elseif($_POST['step'] == '2'){
-?>
-
-
-<strong>2. step</strong> Input query...<span class="silk-icon silk-icon-tick"></span><br />
-<?php
-
 				$response = '';
 				if(in_array($_POST['key'], array('isbn', 'full', 'title', 'combined'))){
 					if($_POST['key'] == 'isbn')
@@ -349,11 +278,6 @@ WHERE
 
 				$response = json_decode(json_encode(simplexml_load_string($response)), true);
 				if(is_array($response['BookList']['BookData'])){
-?>
-
-<strong>3. step</strong> Parsing result...<span class="silk-icon silk-icon-tick"></span>
-<?php
-
 					/**
 					 * Map unique results to the structure of multiple results for convenience...
 					 */
@@ -394,22 +318,19 @@ WHERE
 								'jr' => ''
 							);
 						}
+						$_SESSION['publication_prefetchedData_unchecked'][$i]['note'] = 'Imported from isbndb.com';
 						$i++;
 					}
 ?>
 
-<p>
-	<span class="success">Parsing of your search was successful!</span> You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.<br /><br />
-<?php if($response['BookList']['@attributes']['total_results'] > $i){ ?>
-	Your search result contained <?php echo ((int) $response['BookList']['@attributes']['total_results'])?> results. Due to service limitations only the first 10 entries can be shown. If the result didn't contain the book you searched for, try to narrow down your search via the query!
-<?php } ?>
-</p>
+<p class="success">Parsing of your search was successful!</p>
+<p>Your search contained <strong><?php echo ((int) $response['BookList']['@attributes']['total_results'])?></strong> entries. Due to service limitations only the first 10 entries can be shown. If the result didn't contain the book you searched for, try to narrow down your search via the query!<br />You can now proceed and check your fetched entries! </p>
+<div class="submit"><button onclick="window.location = '<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData';">Check fetched data</button></div>
 <?php
 				}else{
 ?>
 
-<strong>3. step</strong> Parsing result...<span class="silk-icon silk-icon-cross"></span>
-<p class="error">Result was empty!</p>
+<p class="error">Your search result was empty! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'isbndb', 'step': '1'})">start again</a>!</p>
 <?php
 				}
 			}
@@ -417,10 +338,9 @@ WHERE
 			if($_POST['step'] == '1'){
 ?>
 
-<strong>2. step</strong> Input PubMed query... <span class="silk-icon silk-icon-hourglass"></span>
-<label for="pubmedQuery" class="block">PubMed query</label>
+<label for="pubmedQuery" class="block"><?php echo bibliographie_icon_get('database')?> PubMed query</label>
 <input id="pubmedQuery" name="pubmedQuery" style="width: 100%;" />
-<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'pubmed', 'step': '2', 'pubmedQuery': $('#pubmedQuery').val()})">Proceed & parse!</button>
+<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'pubmed', 'step': '2', 'pubmedQuery': $('#pubmedQuery').val()})">Search & parse!</button>
 <?php
 			}elseif($_POST['step'] == '2'){
 				if(!empty($_POST['pubmedQuery'])){
@@ -453,13 +373,19 @@ WHERE
 							$_SESSION['publication_prefetchedData_unchecked'][$i]['doi'] = $document[$doi];
 						if(is_string($document[$year]))
 							$_SESSION['publication_prefetchedData_unchecked'][$i]['year'] = $document[$year];
-						$_SESSION['publication_prefetchedData_unchecked'][$i]['note'] = 'Fetched from PubMed';
+						$_SESSION['publication_prefetchedData_unchecked'][$i]['note'] = 'Imported from PubMed';
 
 						$i++;
 					}
 ?>
 
-					<p><span class="success">Parsing of your search was successful!</span> You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.</p>
+<p class="success">Parsing of your search was successful!</p>
+<p>You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.</p>
+<?php
+				}else{
+?>
+
+<p class="error">Your PubMed query was empty! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'pubmed', 'step': '1'})">start again</a>!</p>
 <?php
 				}
 			}
