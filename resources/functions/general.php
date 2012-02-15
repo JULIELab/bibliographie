@@ -347,19 +347,12 @@ function bibliographie_exit ($title, $message) {
 }
 
 function bibliographie_error_handler ($errno, $errstr, $file, $line) {
-	if($errno != E_STRICT and $errno != E_NOTICE){
-		//bibliographie_exit('PHP error', '<strong>'.$errstr.'</strong> in <em>'.basename($file).':'.$line.'</em>');
-		echo $errno,
-			' ', $errstr,
-			' ', $file,
-			' ', $line;
-		exit();
-	}
+	if($errno != E_STRICT and $errno != E_NOTICE)
+		bibliographie_exit('PHP error', '<strong>'.$errstr.'</strong> in <em>'.basename($file).':'.$line.'</em>');
 }
 
 function bibliographie_exception_handler ($exception) {
-	//bibliographie_exit('Uncaught exception', '<strong>'.$exception->getMessage().'</strong> in <em>'.basename($exception->getFile()).'</em>:'.$exception->getLine().'<br />'.$exception->getTraceAsString());
-	exit();
+	bibliographie_exit('Uncaught exception', '<strong>'.$exception->getMessage().'</strong> in <em>'.basename($exception->getFile()).'</em>:'.$exception->getLine().'<br />'.$exception->getTraceAsString());
 }
 
 function bibliographie_options_compare (array $options, array $_options) {
@@ -409,6 +402,7 @@ function bibliographie_database_update ($version, $query, $description) {
  * Include all needed functions...
  */
 require dirname(__FILE__).'/admin.php';
+require dirname(__FILE__).'/attachments.php';
 require dirname(__FILE__).'/authors.php';
 require dirname(__FILE__).'/bookmarks.php';
 require dirname(__FILE__).'/charmap.php';
@@ -416,12 +410,14 @@ require dirname(__FILE__).'/history.php';
 require dirname(__FILE__).'/maintenance.php';
 require dirname(__FILE__).'/notes.php';
 require dirname(__FILE__).'/publications.php';
+require dirname(__FILE__).'/ris.php';
 require dirname(__FILE__).'/schemeUpdates.php';
 require dirname(__FILE__).'/search.php';
 require dirname(__FILE__).'/tags.php';
 require dirname(__FILE__).'/topics.php';
 
 require dirname(__FILE__).'/../lib/BibTex.php';
+require dirname(__FILE__).'/../lib/upload.class.php';
 
 /**
  * Set error and exception handling for uncaught errors and exceptions.

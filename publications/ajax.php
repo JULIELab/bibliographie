@@ -7,6 +7,64 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 $title = 'An error occured!';
 $text = 'An error occurred...';
 switch($_GET['task']){
+	case 'deleteAttachmentConfirm':
+		$attachment = bibliographie_attachments_get_data($_GET['att_id']);
+
+		if(is_object($attachment)){
+			$text = 'You are about to delete the following attachment.'
+				.'<p>'.bibliographie_attachments_parse($attachment->att_id).'</p>'
+				.'If you are sure, click "delete" below!'
+				.'<p class="success"><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=deleteAttachment&amp;att_id='.((int) $attachment->att_id).'">'.bibliographie_icon_get('delete').' Delete!</a></p>'
+				.'If you don\'t want to delete the attachment, press "cancel" below!';
+		}
+
+		bibliographie_dialog_create('deleteAttachmentConfirm_'.((int) $_GET['att_id']), 'Confirm delete', $text);
+	break;
+
+	case 'registerAttachment':
+		$register = bibliographie_attachments_register($_GET['pub_id'], $_GET['name'], $_GET['location'], $_GET['type']);
+		if(is_array($register)){
+			echo bibliographie_attachments_parse($register['att_id']);
+		}else
+			echo '<p class="error">An error occurred!</p>';
+		break;
+
+	case 'uploadAttachment':
+		$upload_handler = new UploadHandler(
+			array(
+				'upload_dir' => BIBLIOGRAPHIE_ROOT_PATH.'/attachments/',
+				'script_url' => BIBLIOGRAPHIE_WEB_ROOT.'/publications/ajax.php?task=uploadAttachment',
+				'upload_url' => BIBLIOGRAPHIE_WEB_ROOT.'/attachments/',
+				'image_versions' => array()
+			)
+		);
+
+		header('Pragma: no-cache');
+		header('Cache-Control: private, no-cache');
+		header('Content-Disposition: inline; filename="files.json"');
+		header('X-Content-Type-Options: nosniff');
+		header('Access-Control-Allow-Origin: *');
+		header('Access-Control-Allow-Methods: OPTIONS, HEAD, GET, POST, PUT, DELETE');
+		header('Access-Control-Allow-Headers: X-File-Name, X-File-Type, X-File-Size');
+
+		switch ($_SERVER['REQUEST_METHOD']) {
+			case 'OPTIONS':
+				break;
+			case 'HEAD':
+			case 'GET':
+				$upload_handler->get();
+				break;
+			case 'POST':
+				$upload_handler->post();
+				break;
+			case 'DELETE':
+				$upload_handler->delete();
+				break;
+			default:
+				header('HTTP/1.1 405 Method Not Allowed');
+		}
+		break;
+
 	case 'deletePublicationConfirm':
 		$publication = bibliographie_publications_get_data($_GET['pub_id']);
 
@@ -90,7 +148,6 @@ WHERE
 							'stripDelimiter' => true,
 							'validate' => true,
 							'unwrap' => true,
-							//'removeCurlyBraces' => true,
 							'extractAuthors' => true
 						));
 
@@ -345,7 +402,7 @@ WHERE
 			}elseif($_POST['step'] == '2'){
 				if(!empty($_POST['pubmedQuery'])){
 					$searchResult = new SimpleXMLElement(file_get_contents('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=0&usehistory=y&term='.urlencode($_POST['pubmedQuery'])));
-					$dataResult = new SimpleXMLElement(file_get_contents('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=xml&query_key='.$searchResult->QueryKey.'&WebEnv='.$searchResult->WebEnv.'&retstart=0&retmax=20'));
+					$dataResult = new SimpleXMLElement(file_get_contents('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=xml&query_key='.$searchResult->QueryKey.'&WebEnv='.$searchResult->WebEnv.'&retstart=0&retmax=50'));
 					$dataResult = (array) $dataResult;
 
 					$title = 5;
@@ -353,41 +410,79 @@ WHERE
 					$year = 0;
 					$doi = 17;
 
-					$i = 0;
-					foreach($dataResult['DocSum'] as $document){
-						$document = (array) $document;
-						$document = $document['Item'];
-						$authorsList = (array) $document[$authors]->Item;
+					if(is_array($dataResult['DocSum']) and count($dataResult['DocSum']) > 0){
+						$i = 0;
+						foreach($dataResult['DocSum'] as $document){
+							$document = (array) $document;
+							$document = $document['Item'];
+							$authorsList = (array) $document[$authors]->Item;
 
-						$_SESSION['publication_prefetchedData_unchecked'][$i]['title'] = $document[$title];
-						foreach($authorsList as $author)
-							if(is_string($author))
-								$_SESSION['publication_prefetchedData_unchecked'][$i]['author'][] = array (
-									'last' => $author,
-									'first' => '',
-									'von' => '',
-									'jr' => ''
-								);
+							$_SESSION['publication_prefetchedData_unchecked'][$i]['title'] = $document[$title];
+							foreach($authorsList as $author)
+								if(is_string($author))
+									$_SESSION['publication_prefetchedData_unchecked'][$i]['author'][] = array (
+										'last' => $author,
+										'first' => '',
+										'von' => '',
+										'jr' => ''
+									);
 
-						if(is_string($document[$doi]))
-							$_SESSION['publication_prefetchedData_unchecked'][$i]['doi'] = $document[$doi];
-						if(is_string($document[$year]))
-							$_SESSION['publication_prefetchedData_unchecked'][$i]['year'] = $document[$year];
-						$_SESSION['publication_prefetchedData_unchecked'][$i]['note'] = 'Imported from PubMed';
+							if(is_string($document[$doi]))
+								$_SESSION['publication_prefetchedData_unchecked'][$i]['doi'] = $document[$doi];
+							if(is_string($document[$year]))
+								$_SESSION['publication_prefetchedData_unchecked'][$i]['year'] = $document[$year];
+							$_SESSION['publication_prefetchedData_unchecked'][$i]['note'] = 'Imported from PubMed';
 
-						$i++;
-					}
+							$i++;
+						}
 ?>
 
-<p class="success">Parsing of your search was successful!</p>
-<p>You can now proceed and <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData">check your fetched data</a>.</p>
+<p class="success">Parsing of your search was successful, found <em><?php echo $searchResult->Count?></em> articles and fetching data of <?php echo count($dataResult['DocSum'])?>.</p>
+<p>Narrow down your search, if you didnt get the results you desired!</p>
+<p>
+	<strong>Translated query</strong>: <?php echo $searchResult->QueryTranslation?><br /><br />
 <?php
+						foreach($searchResult->TranslationStack->TermSet as $term)
+							echo '<strong>',
+								$term->Term,
+								'</strong> in <em>'.$term->Field.'</em> with '.$term->Count.' results...<br />';
+?>
+
+</p>
+<p>You can now proceed and check your fetched entries!</p>
+<div class="submit"><button onclick="window.location = '<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData';">Check fetched data</button></div>
+<?php
+					}else{
+?>
+
+<p class="error">Your PubMed result was empty! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'pubmed', 'step': '1'})">start again</a>!</p>
+<?php
+					}
 				}else{
 ?>
 
 <p class="error">Your PubMed query was empty! Please <a href="javascript:;" onclick="bibliographie_publications_fetch_data_proceed({'source': 'pubmed', 'step': '1'})">start again</a>!</p>
 <?php
 				}
+			}
+		}elseif($_POST['source'] == 'ris'){
+			if($_POST['step'] == '1'){
+?>
+
+<label for="risInput" class="block"><?php echo bibliographie_icon_get('page-white-code')?> Input RIS!</label>
+<textarea id="risInput" name="risInput" rows="20" cols="20" style="width: 100%;"></textarea>
+<button onclick="bibliographie_publications_fetch_data_proceed({'source': 'ris', 'step': '2', 'risInput': $('#risInput').val()})">Parse!</button>
+<?php
+			}elseif($_POST['step'] == '2'){
+				$ris = new RISParser($_POST['risInput']);
+				$ris->parse();
+				$_SESSION['publication_prefetchedData_unchecked'] = $ris->data();
+?>
+
+<p class="success">Parsing of your input was successful!</p>
+<p>You can now proceed and check your fetched entries!</p>
+<div class="submit"><button onclick="window.location = '<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=checkData';">Check fetched data</button></div>
+<?php
 			}
 		}
 	break;

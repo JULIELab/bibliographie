@@ -450,23 +450,20 @@ function bibliographie_publications_parse_list (array $publications, $type = 'ht
 		if(!in_array($type, array('html', 'text')))
 			$type = 'html';
 
-		$newLine = '<br /><br />'.PHP_EOL;
 		$options = array (
 			'noLinks' => true
 		);
 		if($type == 'text'){
-			//header('Content-Type: text/plain; charset=UTF-8');
-			//$newLine = PHP_EOL.PHP_EOL;
 			$options = array (
 				'plainText' => true
 			);
 		}
 
 		foreach($publications as $publication)
-			$return .= bibliographie_publications_parse_data($publication, 'standard', $options).$newLine;
+			$return .= bibliographie_publications_parse_data($publication, 'standard', $options).PHP_EOL.PHP_EOL;
 	}
 
-	return $return;
+	return nl2br(htmlspecialchars($return));
 }
 
 /**
@@ -1813,6 +1810,44 @@ function bibliographie_publications_delete_publication ($pub_id) {
 			bibliographie_cache_purge();
 			bibliographie_log('publications', 'deletePublication', json_encode(array('dataDeleted' => $publication)));
 		}
+	}
+
+	return $return;
+}
+
+/**
+ *
+ * @staticvar null $attachments
+ * @param type $pub_id
+ * @return type
+ */
+function bibliographie_publications_get_attachments ($pub_id) {
+	static $attachments = null;
+
+	$publication = bibliographie_publications_get_data($pub_id);
+
+	$return = false;
+
+	if(is_object($publication)){
+		$return = array();
+
+		if(!($attachments instanceof PDOStatement))
+			$attachments = DB::getInstance()->prepare('SELECT
+	`att_id`,
+	`name`
+FROM
+	`'.BIBLIOGRAPHIE_PREFIX.'attachments`
+WHERE
+	`pub_id` = :pub_id
+ORDER BY
+	`name`');
+
+		$attachments->execute(array(
+			'pub_id' => $publication->pub_id
+		));
+
+		if($attachments->rowCount() > 0)
+			$return = $attachments->fetchAll(PDO::FETCH_COLUMN, 0);
 	}
 
 	return $return;

@@ -7,17 +7,27 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/init.php';
 <h2>Publications</h2>
 <?php
 switch($_GET['task']){
+	case 'deleteAttachment':
+		bibliographie_history_append_step('attachments', 'Delete attachment', false);
+		echo '<h3>Delete attachment</h3>';
+		$attachment = bibliographie_attachments_get_data($_GET['att_id']);
+		if(is_object($attachment)){
+			if(bibliographie_attachments_delete($attachment->att_id))
+				echo '<p class="success">Attachment was deleted!</p>';
+			else
+				echo '<p class="error">An error occurred!</p>';
+		}else
+			echo '<p class="error">Attachment was not found!</p>';
+		break;
+
 	case 'deletePublication':
 		bibliographie_history_append_step('publications', 'Delete publication', false);
 		echo '<h3>Delete publication</h3>';
 		$publication = bibliographie_publications_get_data($_GET['pub_id']);
 		if(is_object($publication)){
-			$notes = DB::getInstance()->prepare('SELECT `pub_id`, `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'notes` WHERE `pub_id` = :pub_id GROUP BY `user_id`');
-			$notes->execute(array(
-				'pub_id' => (int) $publication->pub_id
-			));
+			$notes = bibliographie_notes_get_notes_of_publication($publication->pub_id);
 
-			if($notes->rowCount() == 0){
+			if(count($notes) == 0){
 				if(bibliographie_publications_delete_publication($publication->pub_id))
 					echo '<p class="success">Publication was deleted!</p>';
 				else
@@ -442,6 +452,7 @@ $(function () {
 	<select id="source" name="source" style="width: 50%;">
 		<option value="bibtexInput">BibTex direct input</option>
 		<option value="bibtexRemote">BibTex remote file</option>
+		<option value="ris">RIS direct input</option>
 		<option value="pubmed">PubMed</option>
 <?php
 		if(BIBLIOGRAPHIE_ISBNDB_KEY != '')
@@ -556,12 +567,12 @@ $(function () {
 					$_POST = reset($_SESSION['publication_prefetchedData_checked']);
 					if(count($_POST['checked_author']) == count($_POST['author']) and count($_POST['checked_editor']) == count($_POST['editor'])){
 						if(is_array($_POST['checked_author']))
-							$_POST['author'] = implode(',', $_POST['checked_author']);
+							$_POST['author'] = array2csv($_POST['checked_author']);
 						else
 							$_POST['author'] = '';
 
 						if(is_array($_POST['checked_editor']))
-							$_POST['editor'] = implode(',', $_POST['checked_editor']);
+							$_POST['editor'] = array2csv($_POST['checked_editor']);
 						else
 							$_POST['editor'] = '';
 
@@ -576,19 +587,19 @@ $(function () {
 
 					$authors = bibliographie_publications_get_authors($_GET['pub_id']);
 					if(is_array($authors) and count($authors) > 0)
-						$_POST['author'] = implode(',', $authors);
+						$_POST['author'] = array2csv($authors);
 
 					$editors = bibliographie_publications_get_editors($_GET['pub_id']);
 					if(is_array($editors) and count($editors) > 0)
-						$_POST['editor'] = implode(',', $editors);
+						$_POST['editor'] = array2csv($editors);
 
 					$tags = bibliographie_publications_get_tags($_GET['pub_id']);
 					if(is_array($tags) and count($tags) > 0)
-						$_POST['tags'] = implode(',', $tags);
+						$_POST['tags'] = array2csv($tags);
 
 					$topics = bibliographie_publications_get_topics($_GET['pub_id']);
 					if(is_array($topics) and count($topics) > 0)
-						$_POST['topics'] = implode(',', $topics);
+						$_POST['topics'] = array2csv($topics);
 				}
 			}
 
@@ -925,11 +936,57 @@ if(count($notes) > 0){
 }
 ?>
 
+<h3>Attachments</h3>
+	<div style="background: #9d9; border: 1px solid #0a0; color: #fff; float: right; margin: 0 0 10px 10px; padding: 5px;">
+		<label for="fileupload">Add files</label>
+		<input id="fileupload" type="file" name="files[]" multiple="multiple" />
+	</div>
+	This is a list of attached files. You can add new files by using the form on the right side.
+<div id="attachments">
+<?php
+if(is_array(bibliographie_publications_get_attachments($publication['pub_id']))){
+	if(count(bibliographie_publications_get_attachments($publication['pub_id'])) > 0)
+		foreach(bibliographie_publications_get_attachments($publication['pub_id']) as $att_id)
+			echo bibliographie_attachments_parse($att_id);
+	else
+		echo '<p class="notice">No files are attached.</p>';
+}
+?>
+
+</div>
+
 <script type="text/javascript">
 	/* <![CDATA[ */
 $(function () {
 	$('tbody').hide();
+
+	$('#fileupload').fileupload({
+		'dataType': 'json',
+		'url': bibliographie_web_root+'/publications/ajax.php?task=uploadAttachment',
+		'done': function (e, data) {
+			bibliographie_publications_register_attachment(data.result[0].original_name, data.result[0].name, data.result[0].type);
+		}
+	});
 });
+
+function bibliographie_publications_register_attachment (name, location, type) {
+	if($('#attachments div.bibliographie_attachment').length == 0)
+		$('#attachments').empty();
+
+	$.ajax({
+		'url': bibliographie_web_root+'/publications/ajax.php',
+		'data': {
+			'task': 'registerAttachment',
+			'name': name,
+			'location': location,
+			'type': type,
+			'pub_id': <?php echo $publication['pub_id']?>
+		},
+		'success': function (html) {
+			$('#attachments').append(html);
+		}
+	});
+}
 	/* ]]> */
 </script>
 <?php
