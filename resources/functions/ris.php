@@ -1,98 +1,211 @@
 <?php
-class RISParser {
-	private
-		$content,
-		$data;
 
-	/**
-	 * Create a new RISParser with some RIS content.
-	 * @param string $content
-	 */
-	function __construct ($content = '') {
-		$this->content = $content;
+namespace bibliographie;
+
+class RISTranslator {
+
+	private $tagAllocations = array (
+		'pub_type' => 'TY',
+		'bibtex_id' => 'ID',
+		'title' => array (
+			'T1',
+			'TI',
+			'CT',
+			'T2'
+		),
+		'author' => array (
+			'A1',
+			'A2',
+			'AU'
+		),
+		'ris_date' => 'Y1',
+		'year' => 'PY',
+		'note' => array (
+			'N1',
+			'L1',
+			'L2',
+			'L3',
+			'L4'
+		),
+		'tags' => 'KW',
+		'start_page' => 'SP',
+		'end_page' => 'EP',
+		'journal' => array (
+			'JF',
+			'JO',
+			'JA',
+			'J1',
+			'J2'
+		),
+		'volume' => 'VL',
+		'number' => 'IS',
+		'location' => 'CY',
+		'publisher' => 'PB',
+		'series' => 'T3',
+		'abstract' => 'N2',
+		'isbn' => 'SN',
+		'location' => 'AD',
+		'url' => 'UR'
+	),
+	$typeAllocations = array (
+		'Misc' => array (
+			'GEN',
+			'ABST',
+			'ADVS',
+			'ART',
+			'CASE',
+			'COMP',
+			'CTLG',
+			'DATA',
+			'ELEC',
+			'HEAR',
+			'ICOMM',
+			'JFULL',
+			'JOUR',
+			'MAP',
+			'MPCT',
+			'MUSIC',
+			'NEWS',
+			'PAMP',
+			'PAT',
+			'PCOMM',
+			'SLIDE',
+			'SOUND',
+			'STAT'
+		),
+		'Article' => array (
+			'MGZN'
+		),
+		'Book' => array (
+			'BOOK'
+		),
+		'Booklet' => array (
+			'GEN'
+		),
+		'Conference' => array (
+			'GEN'
+		),
+		'Inbook' => array (
+			'CHAP'
+		),
+		'Incollection' => array (
+			'SER'
+		),
+		'Inproceedings' => array (
+			'INPR',
+		),
+		'Manual' => array (
+			'GEN'
+		),
+		'Masterthesis' => array (
+			'THES'
+		),
+		'Phdthesis' => array (
+			'THES'
+		),
+		'Proceedings' => array (
+			'CONF'
+		),
+		'Techreport' => array (
+			'RPRT',
+		),
+		'Unpublished' => array (
+			'UNPB'
+		)
+	);
+
+	private function bibtexType2risType ($type) {
+		if(isset($this->typeAllocations[ucfirst($type)][0]))
+			return $this->typeAllocations[ucfirst($type)][0];
+
+		return 'Misc';
 	}
 
-	/**
-	 * Parses given content.
-	 */
-	function parse () {
-		if(!empty($this->content)){
-			$references = array();
-			preg_match_all('~TY\s+\-.*?ER\s+-~is', $this->content, $references, PREG_SET_ORDER);
+	private function risType2bibtexType ($type) {
+		foreach($this->typeAllocations as $bibtexType => $risTypes)
+			foreach($risTypes as $risType)
+				if($risType == $type)
+					return $bibtexType;
 
-			if(count($references) == 0)
-				return false;
+		return 'GEN';
+	}
 
-			foreach($references as $reference){
-				$pages = array();
+	public function bibtex2ris (array $data) {
+		$result = array();
 
-				preg_match_all('~([A-Z0-9]{2})\s+\-\s+(.*)~', $reference[0], $tags, PREG_SET_ORDER);
-				$reference = array(
-					'author' => array(),
-					'editor' => array()
-				);
+		foreach($data as $i => $entry){
+			$entry['pub_type'] = $this->bibtexType2risType($entry['entryType']);
+			$entry['bibtex_id'] = $entry['cite'];
+			if(!empty($entry['pages'])){
+				$entry['pages'] = explode('-', $entry['pages']);
+				$entry['start_page'] = $entry['pages'][0];
+				$entry['end_page'] = $entry['pages'][1];
+			}
+			unset($entry['entryType'], $entry['cite'], $entry['pages']);
 
-				foreach($tags as $tag){
-					if(count($tag) == 3){
-						list($line, $key, $value) = $tag;
+			foreach($entry as $key => $content){
+				$dummy = array();
 
-						if($key == 'TY')
-							$reference['pub_type'] = $value;
-						elseif(in_array($key, array('AU', 'A2', 'A3', 'A4'))){
-							$value = explode(',', $value);
-							$reference['author'][] = array (
-								'last' => $value[0],
-								'von' => '',
-								'first' => $value[1],
-								'jr' => ''
-							);
-						}elseif($key == 'AB')
-							$reference['abstract'] = $value;
-						elseif($key == 'CY')
-							$reference['location'] = $value;
-						elseif($key == 'PY')
-							$reference['year'] = $value;
-						elseif($key == 'DO')
-							$reference['doi'] = $value;
-						elseif($key == 'ET')
-							$reference['edition'] = $value;
-						elseif($key == 'N1')
-							$reference['note'] = $value;
-						elseif($key == 'PB')
-							$reference['publisher'] = $value;
-						elseif($key == 'SN'){
-							$reference['isbn'] = $value;
-							$reference['issn'] = $value;
-						}elseif($key == 'TI')
-							$reference['title'] = $value;
-						elseif($key == 'UR')
-							$reference['url'] = $value;
-						elseif($key == 'VL')
-							$reference['volume'] = $value;
-						elseif($key == 'EP')
-							$pages[1] = $value;
-						elseif($key == 'SP')
-							$pages[0] = $value;
-						elseif($key == 'JO')
-							$reference['journal'] = $value;
-					}
+				if(is_array($content)){
+					if($key == 'author')
+						foreach($content as $author){
+							$dummy[] = $author['last'].', '.$author['first'];
+						}
+
+				}else{
+					$dummy[] = $content;
 				}
-				if(count($pages) == 2)
-					$reference['pages'] = $pages[0].'-'.$pages[1];
 
-				$this->data[] = $reference;
+				if(is_array($this->tagAllocations[$key]))
+					$result[$i][$this->tagAllocations[$key][0]] = $dummy;
+				else
+					$result[$i][$this->tagAllocations[$key]] = $dummy;
 			}
 		}
+
+		return $result;
 	}
 
-	/**
-	 * Give the parsed data.
-	 * @return mixed Returns data on successful parsing or false otherwise.
-	 */
-	function data () {
-		//if(!is_array($this->data))
-		//	return false;
+	public function ris2bibtex (array $data) {
+		$result = array();
 
-		return $this->data;
+		foreach($data as $i => $entry){
+			$result[$i] = array(
+				'editor' => array(),
+				'author' => array(),
+				'tags' => array()
+			);
+			foreach($this->tagAllocations as $bibtex => $allocation){
+				if(is_array($allocation)){
+					foreach($allocation as $risTag){
+						if(!empty($entry[$risTag])){
+							foreach($entry[$risTag] as $row)
+								if($bibtex == 'author'){
+									$row = explode(', ', $row);
+									$result[$i][$bibtex][] = array (
+										'last' => $row[0],
+										'first' => $row[1],
+										'jr' => '',
+										'von' => ''
+									);
+								}
+								else
+									$result[$i][$bibtex] .= $row.PHP_EOL;
+						}
+					}
+
+				}elseif(!empty($entry[$allocation])){
+					$result[$i][$bibtex] = $entry[$allocation][0];
+				}
+			}
+
+			if(!empty($result[$i]['start_page']) and !empty($result[$i]['end_page']))
+				$result[$i]['pages'] = $result[$i]['start_page'].'-'.$result[$i]['end_page'];
+
+			$result[$i]['pub_type'] = $this->risType2bibtexType($result[$i]['pub_type']);
+		}
+
+		return $result;
 	}
+
 }
