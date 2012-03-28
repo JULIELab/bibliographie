@@ -3,7 +3,7 @@ if(!file_exists(dirname(__FILE__).'/../config.php'))
 	exit('Sorry, but we have no config file!');
 require dirname(__FILE__).'/../config.php';
 
-define('BIBLIOGRAPHIE_ROOT_PATH', '..');
+define('BIBLIOGRAPHIE_ROOT_PATH', dirname(__FILE__).'/..');
 define('BIBLIOGRAPHIE_LOG_USING_REPLAY', true);
 
 require BIBLIOGRAPHIE_ROOT_PATH.'/resources/functions/general.php';
@@ -13,8 +13,8 @@ require BIBLIOGRAPHIE_ROOT_PATH.'/resources/functions/general.php';
  */
 $logCount_database = (int) DB::getInstance()->query('SELECT MAX(`log_id`) AS `log_count` FROM `'.BIBLIOGRAPHIE_PREFIX.'log`')->fetch(PDO::FETCH_COLUMN, 0);
 $logCount_file = 0;
-if(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs') > 2)
-	$logCount_file = (int) json_decode(end(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/'.end(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs')))))->id;
+if(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets') > 2)
+	$logCount_file = (int) json_decode(end(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets/'.end(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets')))))->id;
 
 ?><!DOCTYPE html>
 <html>
@@ -31,11 +31,11 @@ if(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs') > 2)
 <?php
 if($logCount_file > $logCount_database){
 	$gap = array();
-	foreach(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs') as $logFile){
+	foreach(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets') as $logFile){
 		if($logFile == '.' or $logFile == '..')
 			continue;
 
-		foreach(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/'.$logFile) as $row){
+		foreach(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets/'.$logFile) as $row){
 			$row = json_decode($row);
 			if($row->id > $logCount_database)
 				$gap[] = json_encode($row);
@@ -46,7 +46,7 @@ if($logCount_file > $logCount_database){
 		case 'replay':
 			foreach($gap as $row){
 				try {
-					DB::getInstance()->beginTransaction();
+					DB::beginTransaction();
 
 					$row = json_decode($row);
 					$data = json_decode($row->data);
@@ -230,7 +230,7 @@ if($logCount_file > $logCount_database){
 					if($result !== false){
 						echo '<p>#'.$row->id.' '.bibliographie_icon_get('tick').' <strong>'.$row->category.', '.$row->action.'</strong> was successfull!</p>';
 						DB::getInstance()->query('UPDATE `'.BIBLIOGRAPHIE_PREFIX.'log` SET `log_id` = '.((int) $row->id).' ORDER BY `log_id` DESC LIMIT 1');
-						DB::getInstance()->commit();
+						DB::commit();
 					}else{
 						echo '<p class="error">#'.$row->id.': An error occurred while trying to apply logged change ('.$row->category.', '.$row->action.').</p>';
 						break;
@@ -242,7 +242,7 @@ if($logCount_file > $logCount_database){
 						break;
 					}
 				} catch (PDOException $e) {
-					DB::getInstance()->rollBack();
+					DB::rollBack();
 					echo '<p class="error">'.$e.'</p>';
 				}
 			}

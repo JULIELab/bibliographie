@@ -37,6 +37,10 @@ if(!is_dir(dirname(__FILE__).'/cache'))
 	mkdir(dirname(__FILE__).'/cache', 0755);
 if(!is_dir(dirname(__FILE__).'/logs'))
 	mkdir(dirname(__FILE__).'/logs', 0755);
+if(!is_dir(dirname(__FILE__).'/logs/errors'))
+	mkdir(dirname(__FILE__).'/logs/errors', 0755);
+if(!is_dir(dirname(__FILE__).'/logs/changesets'))
+	mkdir(dirname(__FILE__).'/logs/changesets', 0755);
 
 /**
  * Require functions.
@@ -90,7 +94,7 @@ if(DB::getInstance()->query('SHOW TABLES LIKE "'.BIBLIOGRAPHIE_PREFIX.'log"')->r
 <?php
 		}elseif($_GET['makeScheme'] == 1){
 			try {
-				DB::getInstance()->beginTransaction();
+				DB::beginTransaction();
 
 				DB::getInstance()->exec('DROP TABLE `'.BIBLIOGRAPHIE_PREFIX.'aigaiongeneral`, `'.BIBLIOGRAPHIE_PREFIX.'availablerights`, `'.BIBLIOGRAPHIE_PREFIX.'changehistory`, `'.BIBLIOGRAPHIE_PREFIX.'config`, `'.BIBLIOGRAPHIE_PREFIX.'grouprightsprofilelink`, `'.BIBLIOGRAPHIE_PREFIX.'logintegration`, `'.BIBLIOGRAPHIE_PREFIX.'rightsprofilerightlink`, `'.BIBLIOGRAPHIE_PREFIX.'rightsprofiles`, `'.BIBLIOGRAPHIE_PREFIX.'usergrouplink`, `'.BIBLIOGRAPHIE_PREFIX.'userrights`;');
 
@@ -134,12 +138,12 @@ if(DB::getInstance()->query('SHOW TABLES LIKE "'.BIBLIOGRAPHIE_PREFIX.'log"')->r
 
 				DB::getInstance()->exec('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'settings` (`key`, `value`) VALUES ("DATABASE_VERSION", "1");');
 
-				DB::getInstance()->commit();
+				DB::commit();
 
 				echo '<p>Scheme has been modified!</p>';
 				echo '<p>You can now <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'">start using bibliographie!</a></p>';
 			} catch (PDOException $e) {
-				DB::getInstance()->rollBack();
+				DB::rollBack();
 				echo '<p>An error occurred!</p><p>'.$e->__toString().'</p>';
 			}
 		}
@@ -153,7 +157,7 @@ if(DB::getInstance()->query('SHOW TABLES LIKE "'.BIBLIOGRAPHIE_PREFIX.'log"')->r
 <?php
 		}elseif($_GET['makeScheme'] == 1){
 			try {
-				DB::getInstance()->beginTransaction();
+				DB::beginTransaction();
 				DB::getInstance()->exec('CREATE TABLE IF NOT EXISTS `'.BIBLIOGRAPHIE_PREFIX.'attachments` (
   `pub_id` int(10) unsigned NOT NULL DEFAULT "0",
   `location` varchar(255) NOT NULL DEFAULT "",
@@ -396,12 +400,12 @@ if(DB::getInstance()->query('SHOW TABLES LIKE "'.BIBLIOGRAPHIE_PREFIX.'log"')->r
 				DB::getInstance()->exec('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topics` (`name`, `description`) VALUES ("Top", "Meta-topic as top of the topic hierarchy.");');
 				DB::getInstance()->exec('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'settings` (`key`, `value`) VALUES ("DATABASE_VERSION", "1");');
 
-				DB::getInstance()->commit();
+				DB::commit();
 
 				echo '<p>Scheme has been created!</p>';
 				echo '<p>You can now <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'">start using bibliographie!</a></p>';
 			} catch (PDOException $e) {
-				DB::getInstance()->rollBack();
+				DB::rollBack();
 				echo '<p>An error occurred!</p><p>'.$e->__toString().'</p>';
 			}
 		}
@@ -417,9 +421,9 @@ if(DB::getInstance()->query('SHOW TABLES LIKE "'.BIBLIOGRAPHIE_PREFIX.'log"')->r
 /**
  * Get the log counter from database and compare it with the counter from log file.
  */
-if(count(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs')) > 2){
+if(count(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets')) > 2){
 	$logCount_database = DB::getInstance()->query('SELECT MAX(`log_id`) AS `count` FROM `'.BIBLIOGRAPHIE_PREFIX.'log`')->fetch(PDO::FETCH_COLUMN, 0);
-	$logCount_file = json_decode(end(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/'.end(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs')))))->id;
+	$logCount_file = json_decode(end(file(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets/'.end(scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets')))))->id;
 	if($logCount_file > $logCount_database)
 		bibliographie_exit('Bibliographie log error', 'You have more logged changes than database changes! Please <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/admin/logReplay.php">use log-replay</a> to fill the gap!');
 	elseif($logCount_database < $logCount_file)
@@ -434,7 +438,7 @@ if(BIBLIOGRAPHIE_DATABASE_VERSION < $databaseSchemeVersion)
 	bibliographie_exit('Bibliographie database scheme error', 'Your program files of bibliographie are older than the database scheme! Please get an up to date copy of bibliographie!');
 elseif(BIBLIOGRAPHIE_DATABASE_VERSION > $databaseSchemeVersion){
 	try {
-		DB::getInstance()->beginTransaction();
+		DB::beginTransaction();
 
 		echo '<h2>Updating database scheme</h2>',
 			'<p>Your scheme is version '.((int) $databaseSchemeVersion).' while this installation of bibliographie needs version '.BIBLIOGRAPHIE_DATABASE_VERSION.'...</p>',
@@ -447,9 +451,9 @@ elseif(BIBLIOGRAPHIE_DATABASE_VERSION > $databaseSchemeVersion){
 		}
 		echo '</ul>';
 
-		DB::getInstance()->commit();
+		DB::commit();
 	} catch (PDOException $e) {
-		DB::getInstance()->rollBack();
+		DB::rollBack();
 		bibliographie_exit('Database scheme update error!', 'An error occurred while trying to update the database scheme!<br /><br />'.$e->__toString());
 	}
 }
