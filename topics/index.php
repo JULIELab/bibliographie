@@ -11,16 +11,11 @@ switch ($_GET['task']) {
     if (is_object($topic)) {
       $parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
       $subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
-
-      if (count($parentTopics) == 0 and count($subTopics) == 0) {
-        if (bibliographie_topics_delete($topic->topic_id))
-          echo '<p class="success">The topic has been deleted!</p>';
-        else
-          echo '<p class="error">An error occurred!</p>';
-      }
-      else
-        echo '<p class="error"><em>' . bibliographie_topics_parse_name($topic->topic_id) . '</em> has parent- or subtopics and can therefore not be deleted!</p>';
-    }
+      if (bibliographie_topics_delete($topic->topic_id))
+		echo '<p class="success">The topic has been deleted!</p>';
+	  else
+        echo '<p class="error">An error occurred!</p>';
+     }
     break;
 
   case 'topicEditor':
@@ -188,8 +183,6 @@ switch ($_GET['task']) {
         if (is_array($lockedTopics) and count(array_intersect($family, $lockedTopics)) == 0)
 		//header
           echo '<em style="float: right;">',
-// the old edit button, is now inlcudes somewhere below
-//          '<a href="' . BIBLIOGRAPHIE_WEB_ROOT . '/topics/?task=topicEditor&amp;topic_id=' . $topic->topic_id . '">' . bibliographie_icon_get('folder-edit') . ' Edit topic</a>',
           ' <a href="javascript:;" onclick="bibliographie_topics_confirm_delete(' . $topic->topic_id . ');">' . bibliographie_icon_get('folder-delete') . ' Delete topic</a>',
           '</em>';
         else
@@ -211,12 +204,12 @@ switch ($_GET['task']) {
 									$('#pubbox').hide();
 									$('#hidepubbutton').hide();	
 									$('#showpubbutton').show();	
-									"><?php echo bibliographie_icon_get('bullet-toggle-minus') ?></a>
+									"><?php echo bibliographie_icon_get_big('bullet-toggle-minus') ?></a>
 								<a id="showpubbutton" onclick="
 									$('#pubbox').show();
 									$('#hidepubbutton').show();	
 									$('#showpubbutton').hide();
-								   "><?php echo bibliographie_icon_get('bullet-toggle-plus') ?></a>
+								   "><?php echo bibliographie_icon_get_big('bullet-toggle-plus') ?></a>				   
 		 <!-- the surrounding div -->
 		  <div id="pubbox" style="background-color:#F8F8F8;">
 			  <?php
@@ -228,8 +221,12 @@ switch ($_GET['task']) {
 				  $includeSubtopics = '&includeSubtopics=1';
 				  $title = ' and subtopics';
 				}
+				
+				$array = bibliographie_topics_get_publications($topic->topic_id, (bool) $_GET['includeSubtopics']);
+				
+				echo $array[0];
 				echo bibliographie_publications_print_list(
-				  bibliographie_topics_get_publications($topic->topic_id, (bool) $_GET['includeSubtopics']), BIBLIOGRAPHIE_WEB_ROOT . '/topics/?task=showPublications&topic_id=' . ((int) $_GET['topic_id']) . $includeSubtopics
+				  $array, BIBLIOGRAPHIE_WEB_ROOT . '/topics/?task=showPublications&topic_id=' . ((int) $_GET['topic_id']) . $includeSubtopics
 				);
 			  }
 			  ?>
@@ -303,12 +300,12 @@ switch ($_GET['task']) {
 									$('#hideeditbutton').hide();	
 									$('#showeditbutton').show();	
 									"
-									><?php echo bibliographie_icon_get('bullet-toggle-minus') ?></a>
+									><?php echo bibliographie_icon_get_big('bullet-toggle-minus') ?></a>
 								<a id="showeditbutton" onclick="
 									$('#editbox').show();
 									$('#hideeditbutton').show();	
 									$('#showeditbutton').hide();
-								   "><?php echo bibliographie_icon_get('bullet-toggle-plus') ?></a>
+								   "><?php echo bibliographie_icon_get_big('bullet-toggle-plus') ?></a>
 		
 		</h4>
 
@@ -513,6 +510,8 @@ switch ($_GET['task']) {
         <a href="javascript:;" onclick="bibliographie_topics_toggle_visiblity_of_all(true)"><?php echo bibliographie_icon_get('bullet-toggle-plus') ?> Open</a>
         <a href="javascript:;" onclick="bibliographie_topics_toggle_visiblity_of_all(false)"><?php echo bibliographie_icon_get('bullet-toggle-minus') ?> Close</a>
         all subtopics
+        <a href="javascript:;" onclick="bibliographie_topics_toggle_visibility_of_topicID()">show Topic IDs</a>
+
       </span>
 
       <h3><?php echo $bibliographie_title ?></h3>
