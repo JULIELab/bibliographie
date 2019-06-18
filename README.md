@@ -1,3 +1,9 @@
+# This project is unmaintained and has multiple unfixed issues.
+**We are not running the current master because of at least one major bug introduced by the 
+the Elasticsearch (ES) integration
+-- which got deprecated in its current incarnation, because ES deprecated "river" support in 2015**
+
+-----------------------------------------------------------------------------------------------------------------------------
 Intents to be a bibliography management tool that derives from the database scheme of Aigaion v2.1.2.
 You can also use it with the current database scheme version v2.2, but when we began the project we started with the v2.1.2.
 
