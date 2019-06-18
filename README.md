@@ -37,7 +37,7 @@ define('BIBLIOGRAPHIE_DATABASE_DEBUG', false);
 define('BIBLIOGRAPHIE_CACHING', true);
 
 // Prefix for the mysql tables.
-define('BIBLIOGRAPHIE_PREFIX', 'a2');
+define('BIBLIOGRAPHIE_PREFIX', 'bib');
 ```
 
 ## 2. Step ##
