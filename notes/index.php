@@ -16,7 +16,7 @@ switch($_GET['task']){
 				if(bibliographie_notes_delete_note($note->note_id))
 					echo '<p class="success">The note was deleted!</p>';
 				else
-					echo '<p class="error">An error occurred!</p>';
+					echo '<p class="error">(EE) Deleting a note failed!</p>';
 
 				break;
 			}
@@ -41,7 +41,7 @@ switch($_GET['task']){
 							echo 'You can now <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showPublication&amp;pub_id='.((int) $publication->pub_id).'">return to the publication</a>.';
 							break;
 						}else
-							echo '<p class="error">An error occurred!</p>';
+							echo '<p class="error">(EE) Saving a note failed!</p>';
 					}
 				}
 
@@ -58,7 +58,7 @@ switch($_GET['task']){
 							echo 'You can now <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showPublication&amp;pub_id='.((int) $publication->pub_id).'">return to the publication</a>.';
 							break;
 						}else
-							echo '<p class="error">An error occurred!</p>';
+							echo '<p class="error">(EE) Saving the edits of an existing note failed!</p>';
 					}
 				}
 

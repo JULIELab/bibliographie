@@ -3,7 +3,7 @@ define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
 require '../init.php';
 
-$text = 'An error occurred!';
+$text = 'notes/ajax: An error occurred!';
 $status = 'error';
 switch($_GET['task']){
 	case 'deleteNoteConfirm':

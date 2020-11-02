@@ -13,7 +13,7 @@ switch($_GET['task']){
 			if(bibliographie_attachments_delete($attachment->att_id))
 				echo '<p class="success">Attachment was deleted!</p>';
 			else
-				echo '<p class="error">An error occurred!</p>';
+				echo '<p class="error">(EE) Deletion of attachment failed!</p>';
 		}else
 			echo '<p class="error">Attachment was not found!</p>';
 		break;
@@ -29,7 +29,7 @@ switch($_GET['task']){
 				if(bibliographie_publications_delete_publication($publication->pub_id))
 					echo '<p class="success">Publication was deleted!</p>';
 				else
-					echo '<p class="error">An error occurred!</p>';
+					echo '<p class="error">(EE) Deletion of publication failed!</p>';
 			}else{
 				echo '<p class="error">Publication cannot be deleted since users have taken notes on this publication!</p><p class="notice">If you want to delete this publication anyway contact your administrator!</p>';
 				echo 'This is a list of users that have taken notes on this publication.<ul>';
@@ -75,7 +75,7 @@ switch($_GET['task']){
 								if(count($result['publicationsAdded']) != count($result['publicationsToAdd']))
 									echo '<br /><span class="error">'.(count($result['publicationsToAdd']) - count($result['publicationsAdded'])).' could not be added.</span>';
 							}else
-								echo bibliographie_icon_get('cross').' An error occurred!';
+								echo bibliographie_icon_get('cross').'(EE) Adding publication failed!';
 
 							echo '</li>';
 						}
@@ -103,7 +103,7 @@ switch($_GET['task']){
 								echo bibliographie_icon_get('tick').' Success!<br />'
 									.'<em>Topic was removed from the publications.</em>';
 							}else
-								echo bibliographie_icon_get('cross').' An error occurred!';
+								echo bibliographie_icon_get('cross').'(EE) Removal of topic failed!';
 
 							echo '</li>';
 						}
@@ -133,7 +133,7 @@ switch($_GET['task']){
 								if(count($result['publicationsAdded']) != count($result['publicationsToAdd']))
 									echo '<br /><span class="error">'.(count($result['publicationsToAdd']) - count($result['publicationsAdded'])).' could not be added.</span>';
 							}else
-								echo bibliographie_icon_get('cross').' An error occurred!';
+								echo bibliographie_icon_get('cross').'(EE) Addition of publication failed!!';
 						}
 						echo '</ul>';
 					}elseif($_POST['removeTags'] == 'Remove tags'){
@@ -152,7 +152,7 @@ switch($_GET['task']){
 								echo bibliographie_icon_get('tick').' Success!<br />'
 									.'<em>Tag was removed from the publications.</em>';
 							}else
-								echo bibliographie_icon_get('cross').' An error occurred!';
+								echo bibliographie_icon_get('cross').'(EE) Removal of tag failed!';
 
 							echo '</li>';
 						}
@@ -519,7 +519,7 @@ $(function () {
 							echo 'You can <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showPublication&amp;pub_id='.((int) $data['pub_id']).'">view the created publication</a> or you can proceed by <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor">creating another</a> publication.';
 							$done = true;
 						}else
-							echo '<p class="error">An error occurred!</p>';
+							echo '<p class="error">(EE) Update of publication failed!</p>';
 					}else{
 						echo '<h3>Creating publication...</h3>';
 

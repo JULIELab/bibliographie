@@ -3,8 +3,8 @@ define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
 require '../init.php';
 
-$title = 'An error occured!';
-$text = 'An error occurred...';
+$title = 'publications/ajax: An error occured!';
+$text = 'publicatins/ajax: An error occurred...';
 switch($_GET['task']){
 	case 'deleteAttachmentConfirm':
 		$attachment = bibliographie_attachments_get_data($_GET['att_id']);
@@ -25,7 +25,7 @@ switch($_GET['task']){
 		if(is_array($register)){
 			echo bibliographie_attachments_parse($register['att_id']);
 		}else
-			echo '<p class="error">An error occurred!</p>';
+			echo '<p class="error">(EE) Registering attachments failed!</p>';
 		break;
 
 	case 'uploadAttachment':
@@ -237,7 +237,7 @@ WHERE
 
 
 		}elseif($_GET['subTask'] == 'approveEntry'){
-			$text = '<p class="error">An error occured!</p>';
+			$text = '<p class="error">(EE) Approval of entry failed!</p>';
 			$status = 'error';
 			if(is_numeric($_GET['entryID'])){
 				$_GET['entryID'] = (int) $_GET['entryID'];

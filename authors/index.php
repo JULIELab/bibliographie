@@ -17,7 +17,7 @@ switch($_GET['task']){
 				if(bibliographie_authors_delete($person->author_id))
 					echo '<p class="success">Person was successfully deleted!</p>';
 				else
-					echo '<p class="error">An error occured!</p>';
+					echo '<p class="error">(EE) Deletion of person failed!</p>';
 			}else
 				echo '<p class="error"><em>'.bibliographie_authors_parse_data($person->author_id).'</em> has '.count($publications).' publications and can therefore not be deleted!</p>';
 		}else

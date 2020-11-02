@@ -1,35 +1,41 @@
 <?php
 /**
  * Get the document from output buffer.
- */
+ * 
+ * @author:  Karl Wulfert
+ * @license: MIT
+*/
 $document = ob_get_clean();
 
 /**
  * If document shall be output with html body then do it.
  */
-if(BIBLIOGRAPHIE_OUTPUT_BODY){
-	ob_start();
+if (BIBLIOGRAPHIE_OUTPUT_BODY) {
+    ob_start();
 
-	require dirname(__FILE__).'/_header.php';
-	echo $document;
-	require dirname(__FILE__).'/_footer.php';
+    require dirname(__FILE__).'/_header.php';
+    echo $document;
+    require dirname(__FILE__).'/_footer.php';
 
-	$document = ob_get_clean();
+    $document = ob_get_clean();
 }
 
 /**
- * Attach the from=history_identifier to every link in the document and output the document.
+ * Attach the from=history_identifier to every link in the document
+ * and output the document.
  */
 echo preg_replace_callback(
-	array (
-		'~\<(a)(\s)(href)\=\"([^"]*)\"~',
-		'~\<(form)(\s)(action)\=\"([^"]*)\"~'
-	),
-	'bibliographie_history_rewrite_links',
-	$document
+    array (
+        '~\<(a)(\s)(href)\=\"([^"]*)\"~',
+        '~\<(form)(\s)(action)\=\"([^"]*)\"~'
+    ),
+    'bibliographie_history_rewrite_links',
+    $document
 );
 
 /**
  * Close the mysql connection.
  */
 DB::close();
+
+/* vim: set tabstop=4 shiftwidth=4 expandtab : */

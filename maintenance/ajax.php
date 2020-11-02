@@ -3,7 +3,7 @@ define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
 require '../init.php';
 
-$text = 'An error occurred!';
+$text = 'maintenance/ajax: An error occurred!';
 $status = 'error';
 switch($_GET['task']){
 	case 'markUnsimilar':
@@ -132,7 +132,7 @@ ORDER BY
 					echo '</table>';
 					DB::commit();
 				} catch (PDOException $e) {
-					echo '<p class="error">An error occured!</p>';
+					echo '<p class="error">(EE) Failed retrieving dead links from database!</p>';
 				}
 			break;
 			case 'authors_charsetArtifacts':

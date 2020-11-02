@@ -5,15 +5,14 @@ require '../init.php';
 
 switch($_GET['task']){
 	case 'setBookmark':
-		$text = 'An error occured!';
+		$text = 'bookmarks/ajax/setBookmark: An error occured!';
 		if(bibliographie_bookmarks_set_bookmark($_GET['pub_id']))
 			$text = bibliographie_bookmarks_print_html($_GET['pub_id']);
-
 		echo $text;
 	break;
 
 	case 'unsetBookmark':
-		$text = 'An error occured!';
+		$text = 'bookmarks/ajax/unsetBookmark: An error occured!';
 		if(bibliographie_bookmarks_unset_bookmark($_GET['pub_id']))
 			$text = bibliographie_bookmarks_print_html($_GET['pub_id']);
 

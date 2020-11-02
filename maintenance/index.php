@@ -54,7 +54,7 @@ function bibliographie_maintenance_mark_unsimilar (group, group_id) {
 			if(json.status == 'success')
 				$('#group_'+group_id).remove();
 			else
-				alert('An error occured!');
+				alert('(EE) Marking of unsimilar authors failed!');
 		}
 	})
 }

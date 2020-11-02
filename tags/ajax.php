@@ -3,7 +3,7 @@ define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
 require '../init.php';
 
-$text = (string) 'An error occured!';
+$text = (string) 'tags/ajax: An error occured!';
 $status = (string) 'error';
 
 switch($_GET['task']){

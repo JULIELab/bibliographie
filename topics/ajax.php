@@ -2,8 +2,8 @@
 define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 require '../init.php';
 
-$title = 'An error occured!';
-$text = 'An error occured!';
+$title = 'topics/ajax: An error occured!';
+$text = 'topics/ajax: An error occured!';
 $status = 'error';
 switch($_GET['task']){
 	case 'deleteTopicConfirm':

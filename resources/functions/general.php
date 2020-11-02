@@ -1,4 +1,5 @@
 <?php
+
 class DB {
 	private static
 		$instance = null,
@@ -17,7 +18,8 @@ class DB {
 	public static function getInstance () {
 		if(!self::$instance){
 			try {
-				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE, BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
+				self::$instance = new PDO("mysql:host=localhost;dbname=bibliographie", BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD);
+/* HACK, entfernt weil auf neuem login Probleme: , array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8')); */
 				self::$instance->exec('SET CHARACTER SET utf8');
 				self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			} catch (PDOException $e) {
@@ -66,7 +68,7 @@ class DB {
 	/**
 	 * Close connection.
 	 */
-	public function close () {
+	public static function close () {
 		if(self::$instance)
 			self::$instance = null;
 	}
