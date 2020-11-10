@@ -59,7 +59,9 @@ Access the app via a browser at the path you've set in the config file earlier. 
 
 ## Reach the finish line ##
 
-All done... You can now start using bibliographie...
+All done... You can now start using bibliographie.
+If you're new to bibliographie and do not have an Aigaion database, you will have a meta-topic called "Top" that is used as the root of the topic graph.
+
 
 # 3rd party libraries #
 
@@ -68,5 +70,3 @@ All done... You can now start using bibliographie...
 * jGrowl http://plugins.jquery.com/project/jGrowl
 * jQuery TokenInput http://loopj.com/jquery-tokeninput/
 * Structures_BibTex http://pear.php.net/package/Structures_BibTex (heavily modified)
-
-* If you're new to bibliographie and do not have an aigaion database, you'll have a meta-topic called "Top" that is used as the root of the topic graph.
