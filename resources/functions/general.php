@@ -1,8 +1,5 @@
 <?php
-<<<<<<< HEAD
 
-=======
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
 class DB {
 	private static
 		$instance = null,
@@ -21,14 +18,9 @@ class DB {
 	public static function getInstance () {
 		if(!self::$instance){
 			try {
-<<<<<<< HEAD
 				self::$instance = new PDO("mysql:host=localhost;dbname=bibliographie", BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD);
 /* HACK, entfernt weil auf neuem login Probleme: , array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8')); */
 				self::$instance->exec('SET CHARACTER SET utf8');
-=======
-				self::$instance = new PDO('mysql:host='.BIBLIOGRAPHIE_MYSQL_HOST.';dbname='.BIBLIOGRAPHIE_MYSQL_DATABASE, BIBLIOGRAPHIE_MYSQL_USER, BIBLIOGRAPHIE_MYSQL_PASSWORD, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
-				self::$instance->exec("SET NAMES 'utf8'");
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
 				self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			} catch (PDOException $e) {
 				bibliographie_exit('No database connection', 'Sorry, but we have no connection to the database!<br />'.$e->getMessage());
@@ -76,11 +68,7 @@ class DB {
 	/**
 	 * Close connection.
 	 */
-<<<<<<< HEAD
 	public static function close () {
-=======
-	public function close () {
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
 		if(self::$instance)
 			self::$instance = null;
 	}
@@ -180,18 +168,6 @@ function bibliographie_icon_get ($name, $title = '') {
 }
 
 /**
-<<<<<<< HEAD
-=======
- * Give the HTML-snippet for an css-sprite icon.
- * @param string $name Identification of the icon.
- * @return string HTML-snippet
- */
-function bibliographie_icon_get_big ($name, $title = '') {
-	return '<span class="silk-icon-big silk-icon-big-'.htmlspecialchars($name).'" title="'.htmlspecialchars($title).'"> </span>';
-}
-
-/**
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
  * Write an action into the log.
  * @param string $category The category the action was done in.
  * @param string $action The action itself.

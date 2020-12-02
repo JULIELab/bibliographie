@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
 	<head>
-		<meta http-equiv="Content-type" content="text/html; charset=utf-8" />  <!-- setting page coding type -->
-		
 		<title>bibliographie | bibliographie</title>
 
 		<link rel="shortcut icon" href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/css/favicon.png" type="image/png" />
@@ -40,7 +38,6 @@
 		<script type="text/javascript" src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/functions/publications.js"></script>
 		<script type="text/javascript" src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/functions/tags.js"></script>
 		<script type="text/javascript" src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/functions/topics.js"></script>
-		<script type="text/javascript" src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/functions/esearch.js"></script>
 	</head>
 
 	<body id="top">
@@ -48,17 +45,22 @@
 
 		<div id="wrapper">
 			<div id="header">
-				<table border="0px" style="width: 100%;padding:3px">
-					<tr>
-						<td>
-							<h1>
-								<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>"><img src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/css/favicon.png" type="image/png" height="32" width="32" />ibliographie</a>
-							</h1>
-							<div id="mouse_movement"></div>
+				<form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/search/" method="get" id="search">
+					<div>
+						<div id="complexSearches">
+							<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/search/?task=authorSets">Search author sets</a>
+						</div>
 
-						</td>
-					</tr>
-				</table>
+						<input type="hidden" name="task" value="simpleSearch" />
+						<input type="text" id="q" name="q" style="width: 50%" placeholder="<?php echo htmlspecialchars($_GET['q'])?>" />
+						<button id="searchSubmit"><?php echo bibliographie_icon_get('find')?></button>
+					</div>
+				</form>
+
+				<h1>
+					<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>"><img src="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/resources/css/favicon.png" type="image/png" height="32" width="32" />ibliographie</a>
+				</h1>
+				<div id="mouse_movement"></div>
 			</div>
 
 			<div id="menu">
@@ -69,8 +71,6 @@
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/bookmarks/?task=showBookmarks"><?php echo bibliographie_icon_get('star')?> Bookmarks</a>
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/tags/?task=showCloud"><?php echo bibliographie_icon_get('tag-blue')?> Tags</a>
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/notes/?task=showNotes"><?php echo bibliographie_icon_get('note')?> Notes</a>
-				<h3><?php echo bibliographie_icon_get('find')?> Search</h3>
-				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/esearch/?task=start"><?php echo bibliographie_icon_get('sitemap')?> Search Content</a>
 
 
 				<h3><?php echo bibliographie_icon_get('add')?> Add data</h3>
@@ -94,9 +94,6 @@
 			<div id="content">
 <?php
 bibliographie_history_parse();
-
-header("Content-Type: text/html;charset=utf-8"); //setting page coding type
-echo "<!-- ttt -->"
 ?>
 
 				<script type="text/javascript">

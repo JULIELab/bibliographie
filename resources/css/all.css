@@ -103,7 +103,7 @@
 		border: 1px solid #aaa;
 		color: #000;
 		font-size: 16px;
-		margin-right: 0px;
+		margin-right: 5px;
 		padding: 5px;
 	}
 
@@ -111,12 +111,6 @@
 		border: 1px solid #aaa;
 		font-size: 16px;
 		padding: 5px;
-	}
-	#searchAuthorsSet {
-		border: 1px solid #aaa;
-		font-size: 16px;
-		padding: 5px;
-		background-color: #eee;
 	}
 
 	#menu {
@@ -531,14 +525,4 @@
 	a[href]:after {
 		content: ' (' attr(href) ')';
 	}
-}
-
-
-.active_cell {
-	background-color: #D8D8D8;
-	text-decoration: underline;
-} 
-.inactive_cell {
-	background-color: #EFEFEF;
-	text-decoration: underline;
 }

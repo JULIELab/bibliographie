@@ -591,9 +591,9 @@ function bibliographie_topics_traverse ($topic_id, $depth = 1, &$walkedBy = arra
 				$walkedBy[$topic->topic_id] = 1;
 			else
 				$walkedBy[$topic->topic_id]++;
-			//missing is the printing of parent topics with id....did not find the line....
+
 			if($usage == 'print')
-				$topic->name = '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=showTopic&topic_id='.$topic->topic_id.'">'.$topic->name.'</a><span class="topicID"> DB-ID: ' . $topic->topic_id. "</span>";
+				$topic->name = '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=showTopic&topic_id='.$topic->topic_id.'">'.$topic->name.'</a>';
 			else
 				$topic->name = '<a href="javascript:;" onclick="$(\'#topics\').tokenInput(\'add\', {id:\''.$topic->topic_id.'\',name:\''.$topic->name.'\'})"><span class="silk-icon silk-icon-add"></span></a> '.$topic->name;
 
@@ -704,14 +704,17 @@ function bibliographie_topics_delete ($topic_id) {
 	if(is_object($topic)){
 		$parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
 		$subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
-		if($deleteTopic === null){
-			$deleteTopic = DB::getInstance()->prepare('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` WHERE `topic_id` = :topic_id LIMIT 1');
-		}
-		$deleteTopic->bindParam('topic_id', $topic->topic_id);
-		$return = (bool) $deleteTopic->execute();
-		if($return){
-			bibliographie_cache_purge();
-			bibliographie_log('topics', 'deleteTopic', json_encode(array('dataDeleted' => $topic)));
+		if(count($parentTopics) == 0 and count($subTopics) == 0){
+			if($deleteTopic === null)
+				$deleteTopic = DB::getInstance()->prepare('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` WHERE `topic_id` = :topic_id LIMIT 1');
+
+			$deleteTopic->bindParam('topic_id', $topic->topic_id);
+			$return = (bool) $deleteTopic->execute();
+
+			if($return){
+				bibliographie_cache_purge();
+				bibliographie_log('topics', 'deleteTopic', json_encode(array('dataDeleted' => $topic)));
+			}
 		}
 	}
 

@@ -13,24 +13,12 @@ switch($_GET['task']){
 			$parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
 			$subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
 
-			if(count($subTopics) == 0){
+			if(count($parentTopics) == 0 and count($subTopics) == 0){
 				$text = 'You are about to delete <em>'.bibliographie_topics_parse_name($topic->topic_id).'</em>. If you are sure, click "delete" below!'
 					.'<p class="success"><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=deleteTopic&amp;topic_id='.((int) $topic->topic_id).'">'.bibliographie_icon_get('folder-delete').' Delete!</a></p>'
 					.'If you dont want to delete the topic, press "cancel" below!';
-			}else{
-				$subTopicsText = "";
-				for ($i = 0; $i < count($subTopics); $i++) {
-					$subTopicsText = $subTopicsText . "<br>" . bibliographie_topics_parse_name($subTopics[$i]);
-				}
-				$parentTopicsText = "";
-				for ($i = 0; $i < count($parentTopics); $i++) {
-					$parentTopicsText = $parentTopicsText . "<br>" . bibliographie_topics_parse_name($parentTopics[$i]);
-				}
-
-				
-				$text = '<p class="error"><em>'.bibliographie_topics_parse_name($topic->topic_id).'</em> has subtopics! They would remain as artifacts in the database and may not be reachable anymore.</p> <b>Subtopics:</b>' . $subTopicsText. '<br><br>'
-						.'<br><br><b>Please link the subtopics to another parent before deleting!</b> ';
-			}
+			}else
+				$text = '<p class="error"><em>'.bibliographie_topics_parse_name($topic->topic_id).'</em> has parent- or subtopics and can therefore not be deleted!</p>';
 		}
 
 		bibliographie_dialog_create('deleteTopicConfirm_'.((int) $_GET['topic_id']), 'Confirm delete', $text);

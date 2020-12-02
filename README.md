@@ -1,7 +1,7 @@
-Intents to be a bibliography management tool and was derived from the database scheme of Aigaion v2.1.2.
-You can also use it with the current database scheme version v2.2, but the project was started with v2.1.2.
+Intents to be a bibliography management tool that derives from the database scheme of Aigaion v2.1.2.
+You can also use it with the current database scheme version v2.2, but when we began the project we started with the v2.1.2.
 
-Bibliographie aims to tackle some problems of Aigaion like the old code base, slowness for large databases, problems with multi-hierarchical graphs and adds some neat functionality like suggestions and maintanance tasks, that makes it easier to cope with a lot of literature.
+Bibliographie aims to tackle some problems of Aigaion like the old code base, slowness for large databases, problems with multihierarchical graphs and adds some neat functionality too, that make it easier to cope with a lot of literature.
 
 # Get it running #
 ## 1. step: config file ##
@@ -59,14 +59,27 @@ Access the app via a browser at the path you've set in the config file earlier. 
 
 ## Reach the finish line ##
 
-All done... You can now start using bibliographie.
-If you're new to bibliographie and do not have an Aigaion database, you will have a meta-topic called "Top" that is used as the root of the topic graph.
-
+All done... You can now start using bibliographie...
 
 # 3rd party libraries #
+This is a list of stuff that i didn't handcraft myself but took from other nice people because their software suits my needs.
 
 * jQuery http://www.jquery.com/
 * jQuery UI http://www.jquery-ui.com/
 * jGrowl http://plugins.jquery.com/project/jGrowl
 * jQuery TokenInput http://loopj.com/jquery-tokeninput/
 * Structures_BibTex http://pear.php.net/package/Structures_BibTex (heavily modified)
+
+## Adjust 3rd party libraries ##
+From file `resources/javascript/jquery.tokeninput.js` remove all lines where it says `cache.add(SOMETHING)`. This is already done in the file that is redistributed with bibliographie.
+
+Additionally at the block (lines 198 to 201)
+
+```js
+.blur(function () {
+	hide_dropdown();
+	$(this).val("");
+})
+```
+
+remove the line `$(this.val(""));`. This is also already done in the redistributed file.

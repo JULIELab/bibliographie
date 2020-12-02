@@ -1,1 +1,0 @@
-[authors] ([year]). [title]. in: [journal], [volume], [pages].
