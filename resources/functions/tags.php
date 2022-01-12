@@ -262,50 +262,94 @@ function bibliographie_tags_populate_input ($tags) {
 	return $prePopulateTags;
 }
 
-function bibliographie_tags_search_tags ($query, $expandedQuery = '') {
+function bibliographie_tags_search_tags ($query, $expandedQuery = '', $booleanSearch = false) {
 	$return = array();
 
 	if(mb_strlen($query) >= 1){
-		if(empty($expandedQuery))
-			$expandedQuery = bibliographie_search_expand_query($query);
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_tags_'.md5($query).'_'.md5($expandedQuery).'.json'))
-			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_tags_'.md5($query).'_'.md5($expandedQuery).'.json'));
+        if ($booleanSearch) {
 
-		$tags = DB::getInstance()->prepare('SELECT
-	`tag_id`,
-	`tag`,
-	`relevancy`
-FROM (
-	SELECT
-		`tag_id`,
-		`tag`,
-		IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
-	FROM (
-		SELECT
-			`tag_id`,
-			`tag`,
-			MATCH(
-				`tag`
-			) AGAINST (
-				:expanded_query
-			) AS `innerRelevancy`
-		FROM
-			`'.BIBLIOGRAPHIE_PREFIX.'tags`
+            // new MySQL boolean search mode (extended search)
 
-	) fullTextSearch
-) likeMatching
-WHERE
-	`relevancy` > 0 AND
-	`tag` LIKE "%'.trim(DB::getInstance()->quote($query), '\'').'%"
-ORDER BY
-	`relevancy` DESC,
-	LENGTH(`tag`),
-	`tag` ASC,
-	`tag_id`');
-		$tags->execute(array(
-			'expanded_query' => $expandedQuery
-		));
+            $searchFields = [];
+
+            if ($_GET['tag_id']) {
+                $searchFields[] ="`tag_id`";
+            }
+            if ($_GET['tag_name']) {
+                $searchFields[] ="`tag`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $tags = DB::getInstance()->prepare('
+                SELECT 
+                    `tag_id`,
+                    `tag`,
+                    MATCH(`tag`) AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'tags` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                ORDER BY
+                    `relevancy` DESC,
+                    LENGTH(`tag`),
+                    `tag` ASC,
+                    `tag_id`
+                ;
+            ');
+
+            $tags->execute();
+
+        } else {
+
+
+            if (empty($expandedQuery)) {
+                $expandedQuery = bibliographie_search_expand_query($query);
+            }
+
+            if (BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_tags_' . md5($query) . '_' . md5($expandedQuery) . '.json')) {
+                return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_tags_' . md5($query) . '_' . md5($expandedQuery) . '.json'));
+            }
+
+            $tags = DB::getInstance()->prepare('SELECT
+                `tag_id`,
+                `tag`,
+                `relevancy`
+            FROM (
+                SELECT
+                    `tag_id`,
+                    `tag`,
+                    IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
+                FROM (
+                    SELECT
+                        `tag_id`,
+                        `tag`,
+                        MATCH(
+                            `tag`
+                        ) AGAINST (
+                            :expanded_query
+                        ) AS `innerRelevancy`
+                    FROM
+                        `' . BIBLIOGRAPHIE_PREFIX . 'tags`
+            
+                ) fullTextSearch
+            ) likeMatching
+            WHERE
+                `relevancy` > 0 AND
+                `tag` LIKE "%' . trim(DB::getInstance()->quote($query), '\'') . '%"
+            ORDER BY
+                `relevancy` DESC,
+                LENGTH(`tag`),
+                `tag` ASC,
+                `tag_id`');
+            $tags->execute(array(
+                'expanded_query' => $expandedQuery
+            ));
+        }
 
 		if($tags->rowCount() > 0)
 			$return = $tags->fetchAll(PDO::FETCH_OBJ);

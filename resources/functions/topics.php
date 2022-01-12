@@ -635,52 +635,94 @@ function bibliographie_topics_populate_input ($topics) {
 	return $prePopulateTopics;
 }
 
-function bibliographie_topics_search_topics ($query, $expandedQuery = '') {
+function bibliographie_topics_search_topics ($query, $expandedQuery = '', $booleanSearch = false) {
 	$return = array();
 
 	if(mb_strlen($query) >= 1){
 		if(empty($expandedQuery))
 			$expandedQuery = bibliographie_search_expand_query($query);
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json'))
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json')) {
 			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_topics_'.md5($query).'_'.md5($expandedQuery).'.json'));
+        }
 
-		$topics = DB::getInstance()->prepare('SELECT
-	`topic_id`,
-	`name`,
-	`relevancy`
-FROM (
-	SELECT
-		`topic_id`,
-		`name`,
-		IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
-	FROM (
-		SELECT
-			`topic_id`,
-			`name`,
-			MATCH(
-				`name`,
-				`description`
-			) AGAINST (
-				:expanded_query
-			) AS `innerRelevancy`
-		FROM
-			`'.BIBLIOGRAPHIE_PREFIX.'topics`
+        if ($booleanSearch) {
 
-	) fullTextSearch
-) likeMatching
-WHERE
-	`relevancy` > 0 AND
-	`name` LIKE "%'.trim(DB::getInstance()->quote($query), '\'').'%"
-ORDER BY
-	`relevancy` DESC,
-	LENGTH(`name`),
-	`name` ASC,
-	`topic_id`');
+            // new MySQL boolean search mode (extended search)
 
-		$topics->execute(array(
-			'expanded_query' => $expandedQuery
-		));
+            $searchFields = [];
+
+            if ($_GET['topic_id']) {
+                $searchFields[] ="`topic_id`";
+            }
+            if ($_GET['topic_name']) {
+                $searchFields[] ="`name`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $topics = DB::getInstance()->prepare('
+                SELECT 
+                    `topic_id`,
+                    `name`,
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'topics` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                ORDER BY
+                    `relevancy` DESC,
+                    LENGTH(`name`),
+                    `name` ASC,
+                    `topic_id`
+                ;
+            ');
+
+            $topics->execute();
+
+        } else {
+
+
+            $topics = DB::getInstance()->prepare('SELECT
+                `topic_id`,
+                `name`,
+                `relevancy`
+            FROM (
+                SELECT
+                    `topic_id`,
+                    `name`,
+                    IF(`innerRelevancy` = 0, 1, `innerRelevancy`) AS `relevancy`
+                FROM (
+                    SELECT
+                        `topic_id`,
+                        `name`,
+                        MATCH(
+                            `name`,
+                            `description`
+                        ) AGAINST (
+                            :expanded_query
+                        ) AS `innerRelevancy`
+                    FROM
+                        `' . BIBLIOGRAPHIE_PREFIX . 'topics`
+            
+                ) fullTextSearch
+            ) likeMatching
+            WHERE
+                `relevancy` > 0 AND
+                `name` LIKE "%' . trim(DB::getInstance()->quote($query), '\'') . '%"
+            ORDER BY
+                `relevancy` DESC,
+                LENGTH(`name`),
+                `name` ASC,
+                `topic_id`');
+
+            $topics->execute(array(
+                'expanded_query' => $expandedQuery
+            ));
+        }
 
 		if($topics->rowCount() > 0)
 			$return = $topics->fetchAll(PDO::FETCH_OBJ);

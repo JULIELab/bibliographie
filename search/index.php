@@ -10,12 +10,26 @@ $bibliographie_search_categories = array(
 	'books'
 );
 ?>
-
-<h2>Search</h2>
 <?php
+    switch($_GET['task']){
+        case 'booleanSearch':
+ ?>
+<h2>Extended search</h2>
+            <?php
+            include "partials/booleanSearch.php";
+            break;
+        default:
+            ?>
+<h2>Search</h2>
+
+<?php
+    }
+
 $bibliographie_title = 'Search';
 switch($_GET['task']){
 	case 'authorSets':
+
+
 ?>
 
 <p class="notice">Select two or more authors and optionally provide a query string to search!</p>
@@ -56,6 +70,8 @@ $(function () {
 	});
 
 	$('#content input').charmap();
+
+
 });
 	/* ]]> */
 </script>
@@ -74,6 +90,11 @@ $(function () {
 	break;
 
 	case 'simpleSearch':
+    case 'booleanSearch':
+
+        // set booleanSearch true OR false
+        $booleanSearch = $_GET['task'] == 'booleanSearch' ? true : false;
+
 		if(mb_strlen($_GET['q']) >= 1){
 			$timer = microtime(true);
 
@@ -90,36 +111,43 @@ $(function () {
 			$expandedQuery = bibliographie_search_expand_query($_GET['q']);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'publications')
-				$searchResults['publications'] = bibliographie_publications_search_publications($_GET['q'], $expandedQuery);
+				$searchResults['publications'] = bibliographie_publications_search_publications($_GET['q'], $expandedQuery, $booleanSearch);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'topics')
-				$searchResults['topics'] = bibliographie_topics_search_topics($_GET['q'], $expandedQuery);
+				$searchResults['topics'] = bibliographie_topics_search_topics($_GET['q'], $expandedQuery, $booleanSearch);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'tags')
-				$searchResults['tags'] = bibliographie_tags_search_tags($_GET['q'], $expandedQuery);
+				$searchResults['tags'] = bibliographie_tags_search_tags($_GET['q'], $expandedQuery, $booleanSearch);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'authors')
-				$searchResults['authors'] = bibliographie_authors_search_authors($_GET['q']);
+				$searchResults['authors'] = bibliographie_authors_search_authors($_GET['q'], '', $booleanSearch);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'notes'){
 				$searchResults['notes'] = bibliographie_notes_search_notes($_GET['q'], $expandedQuery);
-				if(count(bibliographie_notes_get_publications_with_notes()) > 0){
-					$publications = array_intersect(bibliographie_publications_search_publications($_GET['q'], $expandedQuery), bibliographie_notes_get_publications_with_notes());
-					if(count($publications) > 0)
+				if(
+                    is_countable(bibliographie_notes_get_publications_with_notes())
+				    && count(bibliographie_notes_get_publications_with_notes()) > 0
+                ){
+					$publications = array_intersect(bibliographie_publications_search_publications($_GET['q'], $expandedQuery), bibliographie_notes_get_publications_with_notes(), $booleanSearch);
+					if(
+                        is_countable($publications)
+					    && count($publications) > 0
+                    )
 						foreach($publications as $publication)
 							foreach(bibliographie_publications_get_notes($publication) as $note)
 								$searchResults['notes'][] = $note;
 				}
+
 			}
 
 			if(empty($_GET['category']) or $_GET['category'] == 'bookmarks')
 				$searchResults['bookmarks'] = array_values(array_intersect($searchResults['publications'], bibliographie_bookmarks_get_bookmarks()));
 
 			if(empty($_GET['category']) or $_GET['category'] == 'journals')
-				$searchResults['journals'] = bibliographie_publications_search_journals($_GET['q'], $expandedQuery);
+				$searchResults['journals'] = bibliographie_publications_search_journals($_GET['q'], $expandedQuery, $booleanSearch);
 
 			if(empty($_GET['category']) or $_GET['category'] == 'books')
-				$searchResults['books'] = bibliographie_publications_search_books($_GET['q'], $expandedQuery);
+				$searchResults['books'] = bibliographie_publications_search_books($_GET['q'], $expandedQuery, $booleanSearch);
 
 			$timer = microtime(true) - $timer;
 
@@ -137,26 +165,36 @@ $(function () {
 
 
 			foreach($searchResults as $category => $results){
-				if(count($results) > 0){
+				if(
+                    is_countable($results)
+				    && count($results) > 0
+                ){
 					$str .= '<h3 id="bibliographie_search_results_'.$category.'">'.ucfirst($category).'</h3>';
 					$toc .= '<li><a href="#bibliographie_search_results_'.$category.'">'.ucfirst($category).'</a> ('.count($results).' results)</li>';
 
-					if($category == 'notes')
-						$str .= '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.bibliographie_publications_cache_list(bibliographie_notes_get_publications_from_notes($searchResults['notes']), true).'" style="float: right">'.bibliographie_icon_get('page-white-stack').' Batch publications</a>';
+					if($category == 'notes') {
+
+                        $str .= '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=batchOperations&amp;list='.bibliographie_publications_cache_list(bibliographie_notes_get_publications_from_notes($searchResults['notes']), true).'" style="float: right">'.bibliographie_icon_get('page-white-stack').' Batch publications</a>';
+
+                    }
 
 					if(in_array($category, array('authors', 'books', 'journals', 'notes', 'tags', 'topics'))){
+
 						$i = (int) 0;
 						$options = array('linkProfile' => true);
 
-						if(count($results) > $limit and $limit != -1)
+						if(
+                            is_countable($results)
+						    && count($results) > $limit and $limit != -1
+                        )
 							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category='.$category.'&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
 						else
 							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> shown by relevancy.';
 
 						foreach($results as $row){
-							if(++$i == $limit and $limit != -1)
+							if(++$i == $limit and $limit != -1) {
 								break;
-
+                            }
 							if($category == 'authors'){
 								$row = bibliographie_authors_get_data($row->author_id);
 								$str .= '<div class="bibliographie_search_result">'.bibliographie_authors_parse_data($row->author_id, $options);
@@ -167,23 +205,24 @@ $(function () {
 								$str .= '</div>';
 
 
-							}elseif($category == 'books')
+							}elseif($category == 'books') {
 								$str .= '<div class="bibliographie_search_result">
-	<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainer&amp;type=book&container='.htmlspecialchars($row->booktitle).'">'.$row->booktitle.'</a>, '.$row->count.' article(s)
-</div>';
+                                            <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainer&amp;type=book&container='.htmlspecialchars($row->booktitle).'">'.$row->booktitle.'</a>, '.$row->count.' article(s)
+                                        </div>';
+                            }
 
-							elseif($category == 'journals')
+							elseif($category == 'journals') {
 								$str .= '<div class="bibliographie_search_result">
-	<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainer&amp;type=journal&container='.htmlspecialchars($row->journal).'">'.$row->journal.'</a>, '.$row->count.' publication(s)
-</div>';
-
-							elseif($category == 'notes')
+                                            <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=showContainer&amp;type=journal&container='.htmlspecialchars($row->journal).'">'.$row->journal.'</a>, '.$row->count.' publication(s)
+                                        </div>';
+                            }
+							elseif($category == 'notes') {
 								$str .= bibliographie_notes_print_note($row->note_id);
+                            }
 
-
-							elseif($category == 'tags')
+							elseif($category == 'tags') {
 								$str .= '<div class="bibliographie_search_result">'.bibliographie_tags_parse_tag($row->tag_id, $options).'</div>';
-
+                            }
 
 							elseif($category == 'topics'){
 								$row = bibliographie_topics_get_data($row->topic_id);
@@ -196,12 +235,16 @@ $(function () {
 					}elseif($category == 'publications' or $category == 'bookmarks'){
 						$options = array();
 
+
+
 						if($_GET['category'] == 'publications' or $_GET['category'] == 'bookmarks'){
 							$options['orderBy'] = 'year';
 
-
 						}else{
-							if(count($results) > $limit and $limit != -1){
+							if(
+                                is_countable($results)
+							    && count($results) > $limit and $limit != -1
+                            ){
 								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category=publications&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
 								$results = array_slice($results, 0, $limit);
 							}else
@@ -210,7 +253,10 @@ $(function () {
 							$options['onlyPublications'] = true;
 						}
 
+
+                        // @toDo: Seems to throw an error
 						$str .= bibliographie_publications_print_list($results, BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category=publications&amp;q='.htmlspecialchars($_GET['q']), $options);
+
 					}
 				}
 			}
@@ -226,7 +272,22 @@ $(function () {
 <script type="text/javascript">
 	/* <![CDATA[ */
 $(function () {
-	$('#bibliographie_search_results').highlight(<?php echo json_encode(explode(' ', $expandedQuery))?>);
+	$('#bibliographie_search_results').highlight(
+        <?php
+        if ($_GET['task'] == 'booleanSearch') {
+
+            // boolean search (remove signs; do not use EQ)
+            $removeBool = array("+", "-", ">", "<", "(", ")", "~", "*", "\"");
+            $cleanedQuery = str_replace($removeBool, "", $_GET['q']);
+            echo json_encode(explode(' ', $cleanedQuery));
+
+        } else {
+            // classic
+            echo json_encode(explode(' ', $expandedQuery));
+        }
+
+        ?>
+    );
 });
 	/* ]]> */
 </script>

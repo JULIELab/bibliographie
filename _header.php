@@ -71,7 +71,8 @@
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/bookmarks/?task=showBookmarks"><?php echo bibliographie_icon_get('star')?> Bookmarks</a>
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/tags/?task=showCloud"><?php echo bibliographie_icon_get('tag-blue')?> Tags</a>
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/notes/?task=showNotes"><?php echo bibliographie_icon_get('note')?> Notes</a>
-
+                <br />
+                <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/search/?task=booleanSearch"><?php echo bibliographie_icon_get('find')?> Extended search</a>
 
 				<h3><?php echo bibliographie_icon_get('add')?> Add data</h3>
 				<a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=publicationEditor"><?php echo bibliographie_icon_get('page-white-add')?> Publication</a>
@@ -169,6 +170,10 @@ $(function () {
 		$('#bibliographie_history .history_steps').toggle('fast');
 	})
 
+    $('#bibliographie_booleansearch').bind('click', function () {
+        $('#bibliographie_booleansearch .booleansearch_operators').toggle('fast');
+    })
+
 	/**
 	 * Enable expected behaviour by sending the placeholder content if no input was provided...
 	 */
@@ -191,6 +196,23 @@ $(function () {
 	$('form input, form select, form textarea').bind('change', function () {
 		bibliographie_editor_is_dirty = true;
 	});
+
+	/**
+     * toggle extended search checkboxes
+     */
+    $('form#search #toggleFilter').click(function(e) {
+        $(':checkbox').each(function() {
+            this.checked = !this.checked;
+        });
+        e.preventDefault();
+    })
+    $('form#search #resetFilter').click(function(e) {
+        $(':checkbox').each(function() {
+            this.checked = 1;
+        });
+        e.preventDefault();
+    })
+
 });
 				/* ]]> */
 			</script>

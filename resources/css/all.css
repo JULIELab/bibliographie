@@ -403,7 +403,7 @@
 		clear: both;
 	}
 
-	#bibliographie_history {
+	#bibliographie_history, #bibliographie_booleansearch {
 		background: #fafafa;
 		color: inherit;
 		font-size: 0.8em;
@@ -412,7 +412,7 @@
 		padding: 5px;
 	}
 
-	#bibliographie_history em {
+	#bibliographie_history em, #bibliographie_booleansearch em {
 		float: right;
 	}
 
@@ -515,6 +515,17 @@
 		transition: all 0.3s ease-out;
 		opacity: 1;
 	}
+    form#search table.filter {
+        width: 100%;
+    }
+    form#search table.filter td {
+        border: 1px solid;
+        padding: 2px;
+    }
+    form#search table.filter td span {
+        float: left;
+        min-width: 80px;
+    }
 }
 
 @media print {

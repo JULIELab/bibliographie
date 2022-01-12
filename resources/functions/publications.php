@@ -336,9 +336,15 @@ function bibliographie_publications_parse_data ($publication_id, $style = 'stand
 		 * Serialize options for filename.
 		 */
 		$optionsSerialized = md5('');
-		if(count($optionsSerialized) > 0)
-			$optionsSerialized = md5(implode(',', array_keys($options)).';'.implode(',', array_values($options)));
 
+
+
+		if(
+            is_countable($optionsSerialized)
+		    && count($optionsSerialized) > 0
+        ) {
+			$optionsSerialized = md5(implode(',', array_keys($options)).';'.implode(',', array_values($options)));
+        }
 		/**
 		 * Return cached result if possible.
 		 */
@@ -473,6 +479,7 @@ function bibliographie_publications_parse_list (array $publications, $type = 'ht
  */
 function bibliographie_publications_print_list (array $publications, $baseLink = '', array $options = array())	{
 	$return = (string) '';
+
 	if(count($publications) > 0){
 		if(!empty($_GET['orderBy']))
 			$options['orderBy'] = $_GET['orderBy'];
@@ -491,6 +498,8 @@ function bibliographie_publications_print_list (array $publications, $baseLink =
 			),
 			$options
 		);
+
+
 
 		// Clear gaps between array indices...
 		$publications = bibliographie_publications_sort($publications, $options['orderBy']);
@@ -544,10 +553,13 @@ function bibliographie_publications_print_list (array $publications, $baseLink =
 			}
 
 			$return .= '<div id="publication_container_'.((int) $publication['pub_id']).'" class="bibliographie_publication';
-			if(bibliographie_bookmarks_check_publication($publication['pub_id']))
-				$return .= ' bibliographie_publication_bookmarked';
+			if (bibliographie_bookmarks_check_publication($publication['pub_id'])) {
+                $return .= ' bibliographie_publication_bookmarked';
+            }
+
 			$return .= '">'.bibliographie_bookmarks_print_html($publication['pub_id']);
 			$return .= bibliographie_publications_parse_data($publication['pub_id']).'</div>';
+
 		}
 
 		$return .= bibliographie_pages_print($pageData, bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
@@ -1621,104 +1633,206 @@ WHERE
 
 /**
  *
- * @param type $query
- * @param type $expandedQuery
- * @return type
+ * @param string $query
+ * @param string $expandedQuery
+ * @param bool   $booleanSearch
+ * @return array
  */
-function bibliographie_publications_search_publications ($query, $expandedQuery = '') {
+function bibliographie_publications_search_publications ($query, $expandedQuery = '', $booleanSearch = false) {
+
 	$return = array();
 
-	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
-		if(empty($expandedQuery))
-			$expandedQuery = bibliographie_search_expand_query($query);
+	if (mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS) {
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json'))
-			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json'));
+        if (empty($expandedQuery)) {
+            $expandedQuery = bibliographie_search_expand_query($query);
+        }
 
-		preg_match('~from\:([0-9]{4})~', $query, $fromYear);
-		preg_match('~to\:([0-9]{4})~', $query, $toYear);
-		preg_match('~in\:([0-9]{4})~', $query, $inYear);
+        if (BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_publications_' . md5($query) . '_' . md5($expandedQuery) . '.json')) {
+            return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_publications_' . md5($query) . '_' . md5($expandedQuery) . '.json'));
+        }
 
-		$addQuery = '';
-		if(isset($fromYear[1]) and mb_strlen($fromYear[1]) == 4)
-			$addQuery .= ' AND `year` >= '.((int) $fromYear[1]);
-		if(isset($toYear[1]) and mb_strlen($toYear[1]) == 4)
-			$addQuery .= ' AND `year` <= '.((int) $toYear[1]);
-		if(isset($inYear[1]) and mb_strlen($inYear[1]) == 4)
-			$addQuery = ' AND `year` = '.((int) $inYear[1]);
+        // filter by year: from; to; in
+        preg_match('~from\:([0-9]{4})~', $query, $fromYear);
+        preg_match('~to\:([0-9]{4})~', $query, $toYear);
+        preg_match('~in\:([0-9]{4})~', $query, $inYear);
 
-		$publications = DB::getInstance()->prepare('SELECT
-	`pub_id`,
-	`title`,
-	`relevancy`,
-	`year`
-FROM (
-	SELECT
-		`pub_id`,
-		`title`,
-		MATCH(`title`, `abstract`, `note`) AGAINST (:expanded_query) AS `relevancy`,
-		`year`
-	FROM
-		`'.BIBLIOGRAPHIE_PREFIX.'publication`
-) fullTextSearch
-WHERE
-	`relevancy` > 0'.$addQuery.'
-ORDER BY
-	`relevancy` DESC,
-	`title`');
-		$publications->execute(array(
-			'expanded_query' => $expandedQuery
-		));
-		if($publications->rowCount() > 0)
-			$return = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
+        $addQuery = '';
+        if (isset($fromYear[1]) and mb_strlen($fromYear[1]) == 4) {
+            $addQuery .= ' AND `year` >= ' . ((int)$fromYear[1]);
+        }
+        if (isset($toYear[1]) and mb_strlen($toYear[1]) == 4) {
+            $addQuery .= ' AND `year` <= ' . ((int)$toYear[1]);
+        }
+        if (isset($inYear[1]) and mb_strlen($inYear[1]) == 4) {
+            $addQuery = ' AND `year` = ' . ((int)$inYear[1]);
+        }
 
+
+        if ($booleanSearch) {
+
+            // new MySQL boolean search mode (extended search)
+
+            $searchFields = [];
+
+            if ($_GET['pub_title']) {
+                $searchFields[] ="`title`";
+            }
+            if ($_GET['pub_abstract']) {
+                $searchFields[] ="`abstract`";
+            }
+            if ($_GET['pub_note']) {
+                $searchFields[] ="`note`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $publications = DB::getInstance()->prepare('
+                SELECT 
+                    `pub_id`,
+                    `title`,
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`,
+                    `year`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    ' . $addQuery . '
+                ORDER BY
+                    `relevancy` DESC,
+                    `title`
+                ;
+            ');
+
+            $publications->execute();
+
+        } else {
+
+            // classic search
+
+            $publications = DB::getInstance()->prepare('
+                SELECT
+                    `pub_id`,
+                    `title`,
+                    `relevancy`,
+                    `year`
+                FROM (
+                    SELECT
+                        `pub_id`,
+                        `title`,
+                        MATCH(`title`, `abstract`, `note`) AGAINST (:expanded_query) AS `relevancy`,
+                        `year`
+                    FROM
+                        `' . BIBLIOGRAPHIE_PREFIX . 'publication`
+                ) fullTextSearch
+                WHERE
+                    `relevancy` > 0' . $addQuery . '
+                ORDER BY
+                    `relevancy` DESC,
+                    `title`
+            ');
+
+            $publications->execute(array(
+                'expanded_query' => $expandedQuery
+            ));
+
+        }
+
+		if($publications->rowCount() > 0) {
+            $return = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
+        }
+
+
+		/*
 		if(BIBLIOGRAPHIE_CACHING){
 			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
 			fwrite($cacheFile, json_encode($return));
 			fclose($cacheFile);
 		}
+		*/
 	}
 
-	return $return;
+    return $return;
 }
 
 /**
  *
- * @param type $query
- * @param type $expandedQuery
- * @return type
+ * @param string $query
+ * @param string $expandedQuery
+ * @param bool   $booleanSearch
+ * @return array
  */
-function bibliographie_publications_search_books ($query, $expandedQuery = '') {
+function bibliographie_publications_search_books ($query, $expandedQuery = '', $booleanSearch = false) {
 	$return = array();
 
 	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
-		if(empty($expandedQuery))
-			$expandedQuery = bibliographie_search_expand_query($query);
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_books_'.md5($query).'_'.md5($expandedQuery).'.json'))
-			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_books_'.md5($query).'_'.md5($expandedQuery).'.json'));
+        if ($booleanSearch) {
 
-		$books = DB::getInstance()->prepare('SELECT
-	`booktitle`,
-	`count`
-FROM (
-	SELECT
-		`booktitle`,
-		COUNT(*) AS `count`,
-		MATCH(`booktitle`) AGAINST (:expanded_query) AS `relevancy`
-	FROM
-		`'.BIBLIOGRAPHIE_PREFIX.'publication`
-	GROUP
-		BY `booktitle`
-) fullTextSearch
-WHERE
-	`relevancy` > 0
-ORDER BY
-	`relevancy` DESC,
-	`booktitle`');
-		$books->execute(array(
-			'expanded_query' => $expandedQuery
-		));
+            // new MySQL boolean search mode (extended search)
+
+            $searchFields = [];
+
+            if ($_GET['book_title']) {
+                $searchFields[] ="`booktitle`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $books = DB::getInstance()->prepare('
+                SELECT 
+                    `booktitle`,
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                ORDER BY
+                    `relevancy` DESC,
+                    `booktitle`
+                ;
+            ');
+
+            $books->execute();
+
+        } else {
+
+            if (empty($expandedQuery)) {
+                $expandedQuery = bibliographie_search_expand_query($query);
+            }
+
+            if (BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_books_' . md5($query) . '_' . md5($expandedQuery) . '.json')) {
+                return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_books_' . md5($query) . '_' . md5($expandedQuery) . '.json'));
+            }
+
+            $books = DB::getInstance()->prepare('SELECT
+                `booktitle`,
+                `count`
+            FROM (
+                SELECT
+                    `booktitle`,
+                    COUNT(*) AS `count`,
+                    MATCH(`booktitle`) AGAINST (:expanded_query) AS `relevancy`
+                FROM
+                    `' . BIBLIOGRAPHIE_PREFIX . 'publication`
+                GROUP
+                    BY `booktitle`
+            ) fullTextSearch
+            WHERE
+                `relevancy` > 0
+            ORDER BY
+                `relevancy` DESC,
+                `booktitle`');
+            $books->execute(array(
+                'expanded_query' => $expandedQuery
+            ));
+        }
 
 		if($books->rowCount() > 0)
 			$return = $books->fetchAll(PDO::FETCH_OBJ);
@@ -1735,41 +1849,78 @@ ORDER BY
 
 /**
  *
- * @param type $query
- * @param type $expandedQuery
- * @return type
+ * @param string   $query
+ * @param string $expandedQuery
+ * @param bool   $booleanSearch
+ * @return array
  */
-function bibliographie_publications_search_journals ($query, $expandedQuery = '') {
+function bibliographie_publications_search_journals ($query, $expandedQuery = '', $booleanSearch = false) {
 	$return = array();
 
 	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
-		if(empty($expandedQuery))
-			$expandedQuery = bibliographie_search_expand_query($query);
+		if(empty($expandedQuery)) {
+            $expandedQuery = bibliographie_search_expand_query($query);
+        }
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json'))
-			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json'));
+		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_journals_'.md5($query).'_'.md5($expandedQuery).'.json')) {
+            return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_journals_' . md5($query) . '_' . md5($expandedQuery) . '.json'));
+        }
 
-		$books = DB::getInstance()->prepare('SELECT
-	`journal`,
-	`count`
-FROM (
-	SELECT
-		`journal`,
-		COUNT(*) AS `count`,
-		MATCH(`journal`) AGAINST (:expanded_query) AS `relevancy`
-	FROM
-		`'.BIBLIOGRAPHIE_PREFIX.'publication`
-	GROUP
-		BY `journal`
-) fullTextSearch
-WHERE
-	`relevancy` > 0
-ORDER BY
-	`relevancy` DESC,
-	`journal`');
-		$books->execute(array(
-			'expanded_query' => $expandedQuery
-		));
+        if ($booleanSearch) {
+
+            // new MySQL boolean search mode (extended search)
+
+            $searchFields = [];
+
+            if ($_GET['journal_title']) {
+                $searchFields[] ="`journal`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $books = DB::getInstance()->prepare('
+                SELECT 
+                    `journal`,
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                ORDER BY
+                    `relevancy` DESC,
+                    `journal`
+                ;
+            ');
+
+            $books->execute();
+
+        } else {
+
+            $books = DB::getInstance()->prepare('SELECT
+                `journal`,
+                `count`
+            FROM (
+                SELECT
+                    `journal`,
+                    COUNT(*) AS `count`,
+                    MATCH(`journal`) AGAINST (:expanded_query) AS `relevancy`
+                FROM
+                    `' . BIBLIOGRAPHIE_PREFIX . 'publication`
+                GROUP
+                    BY `journal`
+            ) fullTextSearch
+            WHERE
+                `relevancy` > 0
+            ORDER BY
+                `relevancy` DESC,
+                `journal`');
+            $books->execute(array(
+                'expanded_query' => $expandedQuery
+            ));
+        }
 
 		if($books->rowCount() > 0)
 			$return = $books->fetchAll(PDO::FETCH_OBJ);

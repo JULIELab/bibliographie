@@ -400,37 +400,86 @@ function bibliographie_authors_delete ($author_id) {
  * @param type $expandedQuery
  * @return type
  */
-function bibliographie_authors_search_authors ($query, $expandedQuery = '') {
+function bibliographie_authors_search_authors ($query, $expandedQuery = '', $booleanSearch) {
 	$return = array();
 
 	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
-		if(empty($expandedQuery))
-			$expandedQuery = bibliographie_search_expand_query($query, array('suffixes' => false, 'plurals' => false, 'umlauts' => true));
 
-		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_authors_'.md5($query).'_'.md5($expandedQuery).'.json'))
-			return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_authors_'.md5($query).'_'.md5($expandedQuery).'.json'));
+        if ($booleanSearch) {
 
-		$authors = DB::getInstance()->prepare('SELECT `author_id`, `surname`, `firstname`, `relevancy` FROM (
-	SELECT
-		`author_id`,
-		`surname`,
-		`firstname`,
-		(MATCH(`surname`, `firstname`) AGAINST (:expandedQuery)) AS `relevancy`
-	FROM
-		`'.BIBLIOGRAPHIE_PREFIX.'author`
-) fullTextSearch
-WHERE
-	`relevancy` > 0
-ORDER BY
-	`relevancy` DESC,
-	`surname` ASC,
-	`firstname` ASC,
-	`author_id` ASC');
+            // new MySQL boolean search mode (extended search)
 
-		$authors->execute(array(
-			'expandedQuery' => $expandedQuery
-		));
+            $searchFields = [];
+            $searchFieldsRelevance = [];
 
+            if ($_GET['author_id']) {
+                $searchFields[] ="`author_id`";
+            }
+            if ($_GET['author_surname']) {
+                $searchFields[] ="`surname`";
+                $searchFieldsRelevance[] ="`surname`";
+            }
+            if ($_GET['author_firstname']) {
+                $searchFields[] ="`firstname`";
+                $searchFieldsRelevance[] ="`firstname`";
+            }
+
+            if (!$searchFields) {
+                // extended search but no fields selected
+                return $return;
+            }
+
+            $authors = DB::getInstance()->prepare('
+                SELECT 
+                    `author_id`,
+                    `surname`,
+                    `firstname`,
+                    MATCH(' . implode(',', $searchFieldsRelevance) . ') AGAINST ("' . $query . '"  IN BOOLEAN MODE) AS `relevancy`
+                FROM 
+                    `' . BIBLIOGRAPHIE_PREFIX . 'author` 
+                WHERE 
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                ORDER BY
+                   `relevancy` DESC,
+                    `surname` ASC,
+                    `firstname` ASC,
+                    `author_id` ASC
+                ;
+            ');
+
+            $authors->execute();
+
+        } else {
+
+            if (empty($expandedQuery)) {
+                $expandedQuery = bibliographie_search_expand_query($query, array('suffixes' => false, 'plurals' => false, 'umlauts' => true));
+            }
+
+            if (BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_authors_' . md5($query) . '_' . md5($expandedQuery) . '.json')) {
+                return json_decode(file_get_contents(BIBLIOGRAPHIE_ROOT_PATH . '/cache/search_authors_' . md5($query) . '_' . md5($expandedQuery) . '.json'));
+            }
+
+            $authors = DB::getInstance()->prepare('SELECT `author_id`, `surname`, `firstname`, `relevancy` FROM (
+                SELECT
+                    `author_id`,
+                    `surname`,
+                    `firstname`,
+                    (MATCH(`surname`, `firstname`) AGAINST (:expandedQuery)) AS `relevancy`
+                FROM
+                    `' . BIBLIOGRAPHIE_PREFIX . 'author`
+            ) fullTextSearch
+            WHERE
+                `relevancy` > 0
+            ORDER BY
+                `relevancy` DESC,
+                `surname` ASC,
+                `firstname` ASC,
+                `author_id` ASC');
+
+            $authors->execute(array(
+                'expandedQuery' => $expandedQuery
+            ));
+        }
 		if($authors->rowCount() > 0)
 			$return = $authors->fetchAll(PDO::FETCH_OBJ);
 
