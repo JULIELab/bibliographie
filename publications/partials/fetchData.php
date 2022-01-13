@@ -32,4 +32,5 @@ unset($_SESSION['publication_prefetchedData_unchecked']);
         })
         /* ]]> */
     </script>
-<?php
+<?php ?>
+

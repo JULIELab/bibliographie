@@ -358,3 +358,4 @@ if(!$done){
     <?php
     bibliographie_charmap_print_charmap();
 }
+

@@ -1745,14 +1745,11 @@ function bibliographie_publications_search_publications ($query, $expandedQuery 
             $return = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
         }
 
-
-		/*
 		if(BIBLIOGRAPHIE_CACHING){
 			$cacheFile = fopen(BIBLIOGRAPHIE_ROOT_PATH.'/cache/search_publications_'.md5($query).'_'.md5($expandedQuery).'.json', 'w+');
 			fwrite($cacheFile, json_encode($return));
 			fclose($cacheFile);
 		}
-		*/
 	}
 
     return $return;
@@ -2039,3 +2036,4 @@ ORDER BY
 
 	return $return;
 }
+

@@ -21,3 +21,5 @@ if(is_object($publication)){
 }else {
     echo '<p class="error">Publication was not found!</p>';
 }
+
+

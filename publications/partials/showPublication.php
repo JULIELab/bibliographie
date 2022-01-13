@@ -255,3 +255,4 @@ if(is_object($publication)){
     bibliographie_history_append_step('publications', 'Publication does not exist', false);
     echo '<p class="error">Publication was not found!</p>';
 }
+

@@ -185,3 +185,4 @@ if(is_array($publications) and count($publications) > 0){
     bibliographie_history_append_step('publications', 'Batch operations ('.count($publications).' publications)');
 }else
     echo '<h3 class="error">List was empty</h3><p>Sorry, but the list you provided was empty!</p>';
+

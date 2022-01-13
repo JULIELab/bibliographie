@@ -106,3 +106,5 @@ if(is_array($_SESSION['publication_prefetchedData_unchecked'])){
     </script>
 
 <?php } ?>
+
+
