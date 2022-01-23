@@ -7,14 +7,14 @@ switch($_GET['task']){
 	case 'coAuthors':
 		$result = array();
 
-		if(is_array($_GET['selectedAuthors']) and count($_GET['selectedAuthors']) > 0){
+		if (is_array($_GET['selectedAuthors']) and !empty($_GET['selectedAuthors'])) {
 			$selectedAuthors = array();
 			foreach($_GET['selectedAuthors'] as $selectedAuthor)
 				$selectedAuthors[] = (int) $selectedAuthor['id'];
 
 			$publications = array();
 			foreach($selectedAuthors as $author){
-				if(count($publications) > 0)
+				if (!empty($publications))
 					$publications = array_intersect($publications, bibliographie_authors_get_publications($author));
 				else
 					$publications = bibliographie_authors_get_publications($author);
@@ -66,16 +66,16 @@ ORDER BY
 			if(is_csv($_GET['authors'], 'int')){
 				$authors = csv2array($_GET['authors'], 'int');
 
-				if(count($authors) > 1){
+				if (!empty($authors)) {
 					$publications = array();
 					foreach($authors as $author){
-						if(count($publications) > 0)
+						if (!empty($publications))
 							$publications = array_intersect($publications, bibliographie_authors_get_publications($author));
 						else
 							$publications = bibliographie_authors_get_publications($author);
 					}
 
-					if(!empty($_GET['query']) and count($publications) > 0){
+					if (!empty($_GET['query']) and !empty($publications)) {
 						$publications = DB::getInstance()->prepare('SELECT *
 FROM (
 	SELECT
@@ -102,18 +102,18 @@ ORDER BY
 							echo '<p class="notice">There were no results for your query string! Showing all publications for this set of authors instead...</p>';
 					}
 
-					if(count($publications) > 0){
+					if (!empty($publications)) {
 						echo bibliographie_publications_print_list(
 							$publications,
 							BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=authorSets&amp;authors='.$_GET['authors']
 						);
-					}else
+					} else
 						echo '<p class="notice">No publications were found for this set of authors!</p>';
 
-				}else
+				} else
 					echo '<p class="notice">To see a list of publications for '.bibliographie_authors_parse_data($authors[0], array('linkProfile' => true)).' visit his/her profile!</p>';
 			}
-		}else
+		} else
 			echo '<p class="notice">You have to select at least two authors to search!</p>';
 	break;
 }

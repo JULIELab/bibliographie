@@ -89,7 +89,7 @@ $(function () {
 
 	case 'showPublications':
 		$publications = bibliographie_publications_get_cached_list($_GET['publicationsList']);
-		if(is_array($publications) and count($publications) > 0){
+		if(is_array($publications) and !empty($publications)){
 			echo bibliographie_publications_print_list(
 				$publications,
 				BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=showPublications&amp;publicationsList='.htmlspecialchars($_GET['publicationsList'])
@@ -132,15 +132,11 @@ $(function () {
 
 			if(empty($_GET['category']) or $_GET['category'] == 'notes'){
 				$searchResults['notes'] = bibliographie_notes_search_notes($_GET['q'], $expandedQuery);
-				if(
-                    is_countable(bibliographie_notes_get_publications_with_notes())
-				    && count(bibliographie_notes_get_publications_with_notes()) > 0
-                ){
+				if (is_countable(bibliographie_notes_get_publications_with_notes())
+				    && !empty(bibliographie_notes_get_publications_with_notes())) {
 					$publications = array_intersect(bibliographie_publications_search_publications($_GET['q'], $expandedQuery), bibliographie_notes_get_publications_with_notes(), $booleanSearch);
-					if(
-                        is_countable($publications)
-					    && count($publications) > 0
-                    )
+					if (is_countable($publications)
+					    && !empty($publications))
 						foreach($publications as $publication)
 							foreach(bibliographie_publications_get_notes($publication) as $note)
 								$searchResults['notes'][] = $note;
@@ -173,10 +169,8 @@ $(function () {
 
 
 			foreach($searchResults as $category => $results){
-				if(
-                    is_countable($results)
-				    && count($results) > 0
-                ){
+				if (is_countable($results)
+				    && !empty($results)) {
 					$str .= '<h3 id="bibliographie_search_results_'.$category.'">'.ucfirst($category).'</h3>';
 					$toc .= '<li><a href="#bibliographie_search_results_'.$category.'">'.ucfirst($category).'</a> ('.count($results).' results)</li>';
 
@@ -191,8 +185,7 @@ $(function () {
 						$i = (int) 0;
 						$options = array('linkProfile' => true);
 
-						if(
-                            is_countable($results)
+						if (is_countable($results)
 						    && count($results) > $limit and $limit != -1
                         )
 							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category='.$category.'&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
@@ -249,8 +242,7 @@ $(function () {
 							$options['orderBy'] = 'year';
 
 						}else{
-							if(
-                                is_countable($results)
+							if (is_countable($results)
 							    && count($results) > $limit and $limit != -1
                             ){
 								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category=publications&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
