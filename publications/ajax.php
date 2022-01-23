@@ -81,7 +81,7 @@ switch($_GET['task']){
 	case 'exportChooseType':
 		$publications = bibliographie_publications_get_cached_list($_GET['exportList']);
 
-		if(is_array($publications) and count($publications) > 0){
+		if(is_array($publications) and !empty($publications)){
 			$title = 'Choose export format';
 			$text = '<h3>Export publications</h3>
 <p class="notice">You\'re about to export '.count($publications).' publication(s). Please choose the format that you want to export into.</p>
@@ -105,7 +105,7 @@ switch($_GET['task']){
 	case 'exportPublications':
 		$publications = bibliographie_publications_get_cached_list($_GET['exportList']);
 
-		if(is_array($publications) and count($publications) > 0){
+		if(is_array($publications) and !empty($publications)){
 			if(in_array($_GET['target'], array('html', 'text'))){
 				$text = bibliographie_publications_parse_list($publications, $_GET['target']);
 
@@ -166,11 +166,11 @@ WHERE
 
 							unset($publication['pub_id'], $publication['pub_type'], $publication['bibtex_id']);
 
-							if(is_array($authors) and count($authors) > 0)
+							if(is_array($authors) and !empty($authors))
 								foreach($authors as $author)
 									$publication['author'][] = bibliographie_authors_parse_data($author, array('forBibTex' => true));
 
-							if(is_array($editors) and count($editors) > 0)
+							if(is_array($editors) and !empty($editors))
 								foreach($editors as $editor)
 									$publication['editor'][] = bibliographie_authors_parse_data($editor, array('forBibTex' => true));
 
@@ -310,7 +310,7 @@ WHERE
 				$bibtex->parse();
 				$ris->parseString(str_replace("\n", \LibRIS\RISReader::RIS_EOL, $input));
 
-				if(count($bibtex->data) > 0 or count($ris->getRecords()) > 0){
+				if (!empty($bibtex->data) or !empty($ris->getRecords())) {
 					foreach($bibtex->data as $key => $row){
 						$bibtex->data[$key]['pub_type'] = $row['entryType'];
 						$bibtex->data[$key]['bibtex_id'] = $row['cite'];
@@ -438,7 +438,7 @@ WHERE
 					$year = 0;
 					$doi = 17;
 
-					if(is_array($dataResult['DocSum']) and count($dataResult['DocSum']) > 0){
+					if (is_array($dataResult['DocSum']) and !empty($dataResult['DocSum'])) {
 						$i = 0;
 						foreach($dataResult['DocSum'] as $document){
 							$document = (array) $document;
@@ -539,7 +539,7 @@ LIMIT
 
 			foreach($result['results'] as $key => $publication){
 				$sameAuthors = array_intersect(bibliographie_publications_get_authors($publication->pub_id), csv2array($_GET['author']));
-				if(count($sameAuthors) > 0){
+				if (!empty($sameAuthors)){
 					if($result['results'][$key]->title == $_GET['title'] or count($sameAuthors) == count(csv2array($_GET['author'])))
 						$result['exact_match'] = true;
 
