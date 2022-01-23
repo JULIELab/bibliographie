@@ -1073,7 +1073,7 @@ function bibliographie_publications_edit_publication ($pub_id, $pub_type, array 
 
 			$higherTransaction = DB::inTransaction();
 
-			if(!higherTransaction)
+			if(!$higherTransaction)
 				DB::beginTransaction();
 
 			if(!($editPublication instanceof PDOStatement))
@@ -1295,7 +1295,7 @@ LIMIT
 				}
 			}
 
-			if(!higherTransaction)
+			if(!$higherTransaction)
 				DB::commit();
 
 			if($return){
