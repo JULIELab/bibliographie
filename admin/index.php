@@ -21,7 +21,7 @@ switch($_GET['task']){
 			$lockedTopics = bibliographie_topics_get_locked_topics();
 		}
 
-		if(count($lockedTopics) > 0){
+		if (!empty($lockedTopics)) {
 ?>
 
 <table class="dataContainer">
@@ -80,7 +80,7 @@ $(function () {
 <h3>Parse logs</h3>
 <?php
 		$logContent = scandir(BIBLIOGRAPHIE_ROOT_PATH.'/logs/changesets/', true);
-		if(count($logContent) > 2){
+		if (count($logContent) > 2) {
 ?>
 
 <form action="<?php echo BIBLIOGRAPHIE_WEB_ROOT.'/admin/'?>" method="get">

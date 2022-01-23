@@ -91,12 +91,12 @@ if($logCount_file > $logCount_database){
 						elseif($row->action == 'mergeAuthors'){
 							$into = bibliographie_authors_get_data($data->into);
 							$delete = bibliographie_authors_get_data($data->delete);
-							if(count(array_diff(bibliographie_authors_get_publications($delete->author_id), csv2array($data->publications)) == 0)
+							if (empty(array_diff(bibliographie_authors_get_publications($delete->author_id), csv2array($data->publications)))
 								and is_object($into)
 								and is_object($delete))
-								if(count(csv2array($data->publications)) == $data->publicationsAffected)
+								if (count(csv2array($data->publications)) == $data->publicationsAffected)
 									$result = bibliographie_maintenance_merge_authors($data->into, $data->delete);
-								else{
+								else {
 									$precheck = false;
 									$precheckError = 'Publications that were affected by the merge, were unequal to the publications that should be affected!';
 								}
@@ -135,36 +135,36 @@ if($logCount_file > $logCount_database){
 							$result = bibliographie_publications_create_publication($data->pub_type, $data->author, $data->editor, $data->title, $data->month, $data->year, $data->booktitle, $data->chapter, $data->series, $data->journal, $data->volume, $data->number, $data->edition, $data->publisher, $data->location, $data->howpublished, $data->organization, $data->institution, $data->school, $data->address, $data->pages, $data->note, $data->abstract, $data->userfields, $data->bibtex_id, $data->isbn, $data->issn, $data->doi, $data->url, $data->topics, $data->tags, $data->pub_id, $data->user_id);
 						}
 
-						elseif($row->action == 'editPublication'){
+						elseif ($row->action == 'editPublication') {
 							$publication = bibliographie_publications_get_data($data->pub_id);
 
-							if(is_object($publication))
+							if (is_object($publication))
 								$result = bibliographie_publications_edit_publication ($data->pub_id, $data->pub_type, $data->author, $data->editor, $data->title, $data->month, $data->year, $data->booktitle, $data->chapter, $data->series, $data->journal, $data->volume, $data->number, $data->edition, $data->publisher, $data->location, $data->howpublished, $data->organization, $data->institution, $data->school, $data->address, $data->pages, $data->note, $data->abstract, $data->userfields, $data->bibtex_id, $data->isbn, $data->issn, $data->doi, $data->url, $data->topics, $data->tags);
 							else
 								$precheck = false;
 
-						}elseif($row->action == 'addTopic'){
+						} elseif ($row->action == 'addTopic') {
 							$topic = bibliographie_topics_get_data($data->topic_id);
 							$publications = bibliographie_topics_get_publications($data->topic_id);
 
 
-							if(is_object($topic) and count(array_diff($publications, $data->publicationsBefore)) == 0)
+							if (is_object($topic) and empty(array_diff($publications, $data->publicationsBefore)))
 								$result = bibliographie_publications_add_topic($data->publicationsToAdd, $data->topic_id);
 							else
 								$precheck = false;
 
-						}elseif($row->action == 'addTag'){
+						} elseif($row->action == 'addTag') {
 							$tag = bibliographie_tags_get_data($data->tag_id);
 							$publications = bibliographie_tags_get_publications($data->tag_id);
-							if(is_object($tag) and count(array_diff($publications, $data->publicationsBefore)) == 0)
+							if (is_object($tag) and empty(array_diff($publications, $data->publicationsBefore)))
 								$result = bibliographie_publications_add_tag($data->publicationsToAdd, $data->tag_id);
 							else
 								$precheck = false;
 
-						}elseif($row->action == 'removeTopic'){
+						} elseif($row->action == 'removeTopic') {
 							$topic = bibliographie_topics_get_data($data->topic_id);
 							$publications = bibliographie_topics_get_publications($data->topic_id);
-							if(is_object($topic) and count(array_diff($publications, $data->publicationsBefore)) == 0)
+							if (is_object($topic) and empty(array_diff($publications, $data->publicationsBefore)))
 								$result = bibliographie_publications_remove_topic($data->publicationsToRemove, $data->topic_id);
 							else
 								$precheck = false;
@@ -173,7 +173,7 @@ if($logCount_file > $logCount_database){
 							$tag = bibliographie_tags_get_data($data->tag_id);
 							$publications = bibliographie_tags_get_publications($data->tag_id);
 
-							if(is_object($tag) and count(array_diff($publications, $data->publicationsBefore)) == 0)
+							if (is_object($tag) and empty(array_diff($publications, $data->publicationsBefore)))
 								$result = bibliographie_publications_remove_tag($data->publicationsToRemove, $data->tag_id);
 							else
 								$precheck = false;
@@ -182,7 +182,7 @@ if($logCount_file > $logCount_database){
 							$dataDeleted = $data->dataDeleted;
 							$publication = bibliographie_publications_get_data($dataDeleted->pub_id);
 
-							if($publication == $dataDeleted and count(bibliographie_publications_get_notes($dataDeleted->pub_id)) == 0)
+							if ($publication == $dataDeleted and empty(bibliographie_publications_get_notes($dataDeleted->pub_id)))
 								$result = bibliographie_publications_delete_publication($dataDeleted->pub_id);
 							else
 								$precheck = false;
