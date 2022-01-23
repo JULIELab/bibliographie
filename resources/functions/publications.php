@@ -339,10 +339,8 @@ function bibliographie_publications_parse_data ($publication_id, $style = 'stand
 
 
 
-		if(
-            is_countable($optionsSerialized)
-		    && count($optionsSerialized) > 0
-        ) {
+		if (is_countable($optionsSerialized)
+		    && !empty($optionsSerialized)) {
 			$optionsSerialized = md5(implode(',', array_keys($options)).';'.implode(',', array_values($options)));
         }
 		/**
@@ -375,10 +373,10 @@ function bibliographie_publications_parse_data ($publication_id, $style = 'stand
 
 		$authorsArray = bibliographie_publications_get_authors($publication['pub_id']);
 		$parsedAuthors = (string) '';
-		if(is_array($authorsArray) and count($authorsArray) > 0){
+		if (is_array($authorsArray) and !empty($authorsArray)) {
 			foreach($authorsArray as $i => $author){
 				if(!empty($parsedAuthors))
-					if(count($authorsArray) == 2 or ($i + 1) == count($authorsArray))
+					if (count($authorsArray) == 2 or ($i + 1) == count($authorsArray))
 						$parsedAuthors .= $settings['authors']['authorDividerLast'];
 					else
 						$parsedAuthors .= $settings['authors']['authorDivider'];
@@ -451,7 +449,7 @@ function bibliographie_publications_parse_data ($publication_id, $style = 'stand
  */
 function bibliographie_publications_parse_list (array $publications, $type = 'html') {
 	$return = false;
-	if(count($publications) > 0){
+	if (!empty($publications)) {
 		$return = (string) '';
 		if(!in_array($type, array('html', 'text')))
 			$type = 'html';
@@ -480,7 +478,7 @@ function bibliographie_publications_parse_list (array $publications, $type = 'ht
 function bibliographie_publications_print_list (array $publications, $baseLink = '', array $options = array())	{
 	$return = (string) '';
 
-	if(count($publications) > 0){
+	if (!empty($publications)) {
 		if(!empty($_GET['orderBy']))
 			$options['orderBy'] = $_GET['orderBy'];
 
@@ -514,7 +512,7 @@ function bibliographie_publications_print_list (array $publications, $baseLink =
 		$return .= bibliographie_pages_print($pageData, bibliographie_link_append_param($baseLink, 'orderBy='.$options['orderBy']));
 		$exportHash = bibliographie_publications_cache_list($publications);
 
-		if(!$options['onlyPublications'] and count($publications) > 1){
+		if (!$options['onlyPublications'] and count($publications) > 1) {
 			$return .= '<p class="bibliographie_operations">';
 
 			$return .= '<span style="float: left">List contains <strong>'.count($publications).' publication</strong>(s)...</span>';
@@ -901,7 +899,7 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 			'tags' => $tags
 		));
 
-		if(count($author) > 0 and !empty($author[0])){
+		if(!empty($author) and !empty($author[0])){
 			$rank = (int) 1;
 			foreach($author as $linkAuthor){
 				$linkAuthor = bibliographie_authors_get_data($linkAuthor);
@@ -930,7 +928,7 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 			}
 		}
 
-		if(count($editor) > 0 and !empty($editor[0])){
+		if (!empty($editor) and !empty($editor[0])){
 			$rank = (int) 1;
 			foreach($editor as $linkEditor){
 				$linkEditor = bibliographie_authors_get_data($linkEditor);
@@ -959,7 +957,7 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 			}
 		}
 
-		if(count($topics) > 0 and !empty($topics[0]))
+		if (!empty($topics) and !empty($topics[0]))
 			foreach($topics as $linkTopic){
 				$linkTopic = bibliographie_topics_get_data($linkTopic);
 				if(is_object($linkTopic)){
@@ -981,7 +979,7 @@ function bibliographie_publications_create_publication ($pub_type, array $author
 				}
 			}
 
-		if(count($tags) > 0 and !empty($tags[0])){
+		if(!empty($tags) and !empty($tags[0])){
 			foreach($tags as $linkTag){
 				$linkTag = bibliographie_tags_get_data($linkTag);
 				if(is_object($linkTag)){
@@ -1157,7 +1155,7 @@ WHERE
 	`pub_id` = '.DB::getInstance()->quote((int) $publication->pub_id).'
 LIMIT '.((int) count(bibliographie_publications_get_authors($publication->pub_id)) + count(bibliographie_publications_get_editors($publication->pub_id))));
 
-			if(count($author) > 0 and !empty($author[0])){
+			if (!empty($author) and !empty($author[0])){
 				$rank = (int) 1;
 				foreach($author as $linkAuthor){
 					$linkAuthor = bibliographie_authors_get_data($linkAuthor);
@@ -1186,7 +1184,7 @@ LIMIT '.((int) count(bibliographie_publications_get_authors($publication->pub_id
 				}
 			}
 
-			if(count($editor) > 0 and !empty($editor[0])){
+			if (!empty($editor) and !empty($editor[0])){
 				$rank = (int) 1;
 				foreach($editor as $linkEditor){
 					$linkEditor = bibliographie_authors_get_data($linkEditor);
@@ -1217,7 +1215,7 @@ LIMIT '.((int) count(bibliographie_publications_get_authors($publication->pub_id
 
 			$unlinkedTopics = array_values(array_diff(bibliographie_publications_get_topics($publication->pub_id), $topics));
 			$linkedTopics = array_values(array_diff($topics, bibliographie_publications_get_topics($publication->pub_id)));
-			if(count($unlinkedTopics) > 0){
+			if (!empty($unlinkedTopics)) {
 				$unlinkTopics = DB::getInstance()->prepare('DELETE FROM
 	`'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink`
 WHERE
@@ -1234,7 +1232,7 @@ LIMIT
 				}
 			}
 
-			if(count($linkedTopics) > 0 and !empty($linkedTopics[0]))
+			if (!empty($linkedTopics) and !empty($linkedTopics[0]))
 				foreach($linkedTopics as $linkTopic){
 					$linkTopic = bibliographie_topics_get_data($linkTopic);
 					if(is_object($linkTopic)){
@@ -1258,7 +1256,7 @@ LIMIT
 
 			$unlinkedTags = array_values(array_diff(bibliographie_publications_get_tags($publication->pub_id), $tags));
 			$linkedTags = array_values(array_diff($tags, bibliographie_publications_get_tags($publication->pub_id)));
-			if(count($unlinkedTags) > 0){
+			if (!empty($unlinkedTags)){
 				$unlinkTags = DB::getInstance()->prepare('DELETE FROM
 	`'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink`
 WHERE
@@ -1275,7 +1273,7 @@ LIMIT
 				}
 			}
 
-			if(count($linkedTags) > 0 and !empty($linkedTags[0])){
+			if (!empty($linkedTags) and !empty($linkedTags[0])){
 				foreach($linkedTags as $linkTag){
 					$linkTag = bibliographie_tags_get_data($linkTag);
 					if(is_object($linkTag)){
@@ -1375,7 +1373,7 @@ function bibliographie_publications_sort (array $publications, $orderBy) {
 
 	$return = $publications;
 
-	if(count($publications) > 0 and in_array($orderBy, array('year', 'title'))){
+	if (!empty($publications) and in_array($orderBy, array('year', 'title'))){
 		$exportHash = bibliographie_publications_cache_list($publications);
 
 		if(BIBLIOGRAPHIE_CACHING and file_exists(BIBLIOGRAPHIE_ROOT_PATH.'/cache/publications_'.$exportHash.'_ordered_'.$orderBy.'.json'))
@@ -1451,7 +1449,7 @@ function bibliographie_publications_add_topic (array $publications, $topic_id) {
 )');
 
 		$addedPublications = array();
-		if(count($publications) > 0){
+		if (!empty($publications)) {
 			foreach($publications as $pub_id){
 				if($addLink->execute(array (
 					'topic_id' => (int) $topic->topic_id,
@@ -1470,7 +1468,7 @@ function bibliographie_publications_add_topic (array $publications, $topic_id) {
 			'publicationsAdded' => $addedPublications
 		);
 
-		if(count($addedPublications) > 0){
+		if (!empty($addedPublications)) {
 			bibliographie_cache_purge('topic_'.((int) $topic->topic_id));
 			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'addTopic', json_encode($return));
@@ -1556,7 +1554,7 @@ function bibliographie_publications_add_tag (array $publications, $tag_id) {
 )');
 
 		$addedPublications = array();
-		if(count($publications) > 0){
+		if (!empty($publications)) {
 			foreach($publications as $pub_id){
 				if($addLink->execute(array (
 					'tag_id' => (int) $tag->tag_id,
@@ -1575,7 +1573,7 @@ function bibliographie_publications_add_tag (array $publications, $tag_id) {
 			'publicationsAdded' => $addedPublications
 		);
 
-		if(count($addedPublications) > 0){
+		if (!empty($addedPublications)) {
 			bibliographie_cache_purge('tag_'.((int) $tag->tag_id));
 			bibliographie_cache_purge('search_');
 			bibliographie_log('publications', 'addTag', json_encode($return));

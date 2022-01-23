@@ -101,7 +101,7 @@ LIMIT 1');
 
 function bibliographie_admin_log_parse ($logContent) {
 	global $bibliographie_admin_log_action_icons, $bibliographie_admin_log_category_icons;
-	if(is_array($logContent) and count($logContent) > 0){
+	if(is_array($logContent) and !empty($logContent)){
 ?>
 
 <table class="dataContainer">

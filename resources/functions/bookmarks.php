@@ -61,7 +61,7 @@ function bibliographie_bookmarks_unset_bookmark ($pub_id) {
  */
 function bibliographie_bookmarks_clear_bookmarks () {
 	$return = false;
-	if(count(bibliographie_bookmarks_get_bookmarks()) > 0){
+	if (!empty(bibliographie_bookmarks_get_bookmarks())) {
 		$return = DB::getInstance()->exec('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists` WHERE `user_id` = '.((int) bibliographie_user_get_id()));
 
 		if($return > 0){
@@ -170,10 +170,10 @@ function bibliographie_bookmarks_set_bookmarks_for_list (array $publications) {
 
 	$return = false;
 
-	if(count($publications) > 0){
+	if (!empty($publications)) {
 		$return = 0;
 		$notBookmarkedPublications = array_diff($publications, bibliographie_bookmarks_get_bookmarks());
-		if(count($notBookmarkedPublications) > 0){
+		if (!empty($notBookmarkedPublications)) {
 			$return = count($notBookmarkedPublications);
 			try {
 				DB::beginTransaction();
@@ -216,12 +216,12 @@ function bibliographie_bookmarks_unset_bookmarks_for_list (array $publications) 
 
 	$return = false;
 
-	if(count($publications)){
+	if (!empty($publications)){
 		$return = 0;
 
 		$bookmarkedPublications = array_intersect($publications, bibliographie_bookmarks_get_bookmarks());
 
-		if(count($bookmarkedPublications) > 0){
+		if(!empty($bookmarkedPublications)){
 			if($unbookmark === null)
 				$unbookmark = DB::getInstance()->prepare('DELETE FROM
 	`'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists`

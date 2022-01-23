@@ -153,7 +153,7 @@ function bibliographie_search_expand_query ($q, $_options = array(), $iteration 
 			 * If we find an irregular plural of a singular add the singular or if we find the singular add the irregular plural.
 			 * Irregular plural means that its not (only) generated via suffixes.
 			 */
-			if($options['plurals'] and count(bibliographie_search_get_plurals()) > 0){
+			if ($options['plurals'] and !empty(bibliographie_search_get_plurals())) {
 				foreach(bibliographie_search_get_plurals() as $singular => $plural){
 					if(mb_strtolower($word) == mb_strtolower($singular))
 						$expandedQuery .= ' '.$plural;

@@ -102,7 +102,7 @@ function csv2array ($csv, $type = null) {
 function array2csv (array $array) {
 	$return = (string) '';
 
-	if(count($array) > 0){
+	if (!empty($array)){
 		foreach($array as $value){
 			if(!empty($return))
 				$return .= ',';

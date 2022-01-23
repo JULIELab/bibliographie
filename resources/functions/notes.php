@@ -111,7 +111,7 @@ ORDER BY
 function bibliographie_notes_get_publications_from_notes (array $notes) {
 	$return = array();
 
-	if(count($notes) > 0){
+	if (!empty($notes)) {
 		foreach($notes as $note)
 			if(!empty($note->pub_id) and is_numeric($note->pub_id))
 				$return[] = $note->pub_id;

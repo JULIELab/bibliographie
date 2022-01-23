@@ -34,7 +34,7 @@ function bibliographie_topics_create_topic ($name, $description, $url, array $to
 		$topic_id = DB::getInstance()->lastInsertId();
 
 	if($return and !empty($topic_id)){
-		if(count($topics) > 0){
+		if (!empty($topics)) {
 			if($createRelations == null)
 				$createRelations = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` (`source_topic_id`, `target_topic_id`) VALUES (:topic_id, :parent_topic)');
 
@@ -102,7 +102,7 @@ function bibliographie_topics_edit_topic ($topic_id, $name, $description, $url, 
 			 * Check for potential circles... Exclude those topics that would produce a circle from the list of parent topics.
 			 */
 			$safeTopics = array_diff($topics, $subTopics);
-			if(count($safeTopics) != count($topics)){
+			if (count($safeTopics) != count($topics)) {
 				echo '<p class="error">There was at least one parent topic that would have produced a circle. Those topics were left out!</p>';
 				echo '<strong>Those are the topics, that have been left out:</strong><ul>';
 				foreach(array_diff($topics, $safeTopics) as $topic)
@@ -114,7 +114,7 @@ function bibliographie_topics_edit_topic ($topic_id, $name, $description, $url, 
 			 * Delete the links to topics that are no longer in the list of parent topics.
 			 */
 			$deleteTopicLinks = array_diff($dataBefore['topics'], $safeTopics);
-			if(count($deleteTopicLinks) > 0){
+			if (!empty($deleteTopicLinks)) {
 				$deleteLink = DB::getInstance()->prepare('DELETE FROM
 	`'.BIBLIOGRAPHIE_PREFIX.'topictopiclink`
 WHERE
@@ -154,7 +154,7 @@ LIMIT 1');
 			 * Add links to topics that were not in the list of parent topics before.
 			 */
 			$addTopicLinks = array_diff($safeTopics, $dataBefore['topics']);
-			if(count($addTopicLinks) > 0){
+			if (!empty($addTopicLinks)) {
 				$addLink = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` (
 	`source_topic_id`,
 	`target_topic_id`
@@ -501,7 +501,7 @@ function bibliographie_topics_get_tags ($topic_id, $includeSubtopics = true) {
 
 		$publications = bibliographie_topics_get_publications($topic->topic_id, $includeSubtopics);
 
-		if(count($publications) > 0){
+		if (!empty($publications)) {
 			if($tags === null){
 				$tags = DB::getInstance()->prepare('SELECT
 	`tag_id`,
@@ -584,7 +584,7 @@ function bibliographie_topics_traverse ($topic_id, $depth = 1, &$walkedBy = arra
 
 	$subtopics = bibliographie_topics_parse_subtopics($topic_id);
 
-	if(count($subtopics) > 0){
+	if (!empty($subtopics)) {
 		echo '<ul>'.PHP_EOL;
 		foreach($subtopics as $topic){
 			if(!array_key_exists($topic->topic_id, $walkedBy))
@@ -746,7 +746,7 @@ function bibliographie_topics_delete ($topic_id) {
 	if(is_object($topic)){
 		$parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
 		$subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
-		if(count($parentTopics) == 0 and count($subTopics) == 0){
+		if (empty($parentTopics) and empty($subTopics)) {
 			if($deleteTopic === null)
 				$deleteTopic = DB::getInstance()->prepare('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topics` WHERE `topic_id` = :topic_id LIMIT 1');
 

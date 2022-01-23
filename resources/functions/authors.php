@@ -285,7 +285,7 @@ ORDER BY
 function bibliographie_authors_populate_input ($string) {
 	if(is_csv($string, 'int')){
 		$authors = csv2array($string, 'int');
-		if(count($authors) > 0){
+		if (!empty($authors)){
 			$populate = array();
 			foreach($authors as $author)
 				$populate[] = array (
@@ -320,7 +320,7 @@ function bibliographie_authors_get_tags ($author_id) {
 
 		$publications = array_values(array_unique(array_merge(bibliographie_authors_get_publications($author->author_id, 0), bibliographie_authors_get_publications($author->author_id, 1))));
 
-		if(count($publications) > 0){
+		if (!empty($publications)) {
 			$publications = array2csv($publications);
 
 			if($tags === null){
@@ -377,7 +377,7 @@ function bibliographie_authors_delete ($author_id) {
 
 	if(is_object($person)){
 		$publications = array_unique(array_merge(bibliographie_authors_get_publications($person->author_id, false), bibliographie_authors_get_publications($person->author_id, true)));
-		if(count($publications) == 0){
+		if (empty($publications)) {
 			if($deletePerson === null)
 				$deletePerson = DB::getInstance()->prepare('DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'author` WHERE `author_id` = :author_id LIMIT 1');
 

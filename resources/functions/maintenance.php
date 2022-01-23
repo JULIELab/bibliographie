@@ -67,7 +67,7 @@ function bibliographie_maintenance_merge_authors ($into, $delete) {
 
 		bibliographie_cache_purge();
 
-		if(count($publications) > 0){
+		if (!empty($publications)){
 			if($linkPublications === null)
 				$linkPublications = DB::getInstance()->prepare('UPDATE
 `'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink`
