@@ -34,7 +34,7 @@ switch($_GET['task']){
 		$result = array();
 
 		$searchTags = bibliographie_tags_search_tags($_GET['q']);
-		if(count($searchTags) > 0){
+		if (!empty($searchTags)) {
 			foreach($searchTags as $tag)
 				$result[] = array (
 					'id' => $tag->tag_id,
