@@ -3,15 +3,9 @@ define('BIBLIOGRAPHIE_OUTPUT_BODY', false);
 
 require '../init.php';
 
-<<<<<<< HEAD
-$title = 'publications/ajax: An error occured!';
-$text = 'publicatins/ajax: An error occurred...';
-switch($_GET['task']){
-=======
 $title = 'An error occured!';
 $text = 'An error occurred...';
 switch ($_GET['task']) {
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
 	case 'deleteAttachmentConfirm':
 		$attachment = bibliographie_attachments_get_data($_GET['att_id']);
 
@@ -228,15 +222,8 @@ WHERE
 				echo bibliographie_icon_get('tick') . ' ' . bibliographie_authors_parse_data($data['author_id']) . ' has been created and approved as ' . htmlspecialchars($_GET['role']) . '!';
 			}else
 				echo '<p class="error">Person could not be created!</p>';
-<<<<<<< HEAD
-
-
-		}elseif($_GET['subTask'] == 'approveEntry'){
-			$text = '<p class="error">(EE) Approval of entry failed!</p>';
-=======
 		}elseif ($_GET['subTask'] == 'approveEntry') {
 			$text = '<p class="error">An error occured!</p>';
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
 			$status = 'error';
 			if (is_numeric($_GET['entryID'])) {
 				$_GET['entryID'] = (int) $_GET['entryID'];
@@ -570,8 +557,4 @@ LIMIT
 		break;
 }
 
-<<<<<<< HEAD
-require BIBLIOGRAPHIE_ROOT_PATH.'/close.php';
-=======
 require BIBLIOGRAPHIE_ROOT_PATH . '/close.php';
->>>>>>> 573c1b9a746a8b9b50d582a493967ad308a6cdb3
