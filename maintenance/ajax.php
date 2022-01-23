@@ -181,7 +181,7 @@ ORDER BY
 
 				$authorsWithoutPublications = array_values(array_diff($authorIDs, $relationIDs));
 
-				if(count($authorsWithoutPublications) > 0){
+				if (!empty($authorsWithoutPublications)){
 					echo '<p class="error">Found <strong>'.count($authorsWithoutPublications).' authors without publications.</strong>';
 					echo '<table class="dataContainer">';
 					echo '<tr>';
@@ -249,7 +249,7 @@ ORDER BY
 
 				$topics = array_diff($topicsArray, $topicLinksArray);
 
-				if(count($topics) > 0){
+				if (!empty($topics)) {
 					echo '<p class="error">Found '.count($topics).' topics without parent topic!</p>';
 					echo '<table class="dataContainer"><tr><th style="width: 5%"> </th><th>Name</th></tr>';
 
