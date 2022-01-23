@@ -56,7 +56,7 @@ if(is_object($publication)){
                 $notEmpty = false;
                 if($dataKey == 'authors'){
                     $authors = bibliographie_publications_get_authors($publication['pub_id'], 'name');
-                    if(is_array($authors) and count($authors) > 0){
+                    if(is_array($authors) and !empty($authors)){
                         $notEmpty = true;
 
                         foreach($authors as $author)
@@ -64,7 +64,7 @@ if(is_object($publication)){
                     }
                 }elseif($dataKey == 'editors'){
                     $editors = bibliographie_publications_get_editors($publication['pub_id'], 'name');
-                    if(is_array($editors) and count($editors) > 0){
+                    if(is_array($editors) and !empty($editors)){
                         $notEmpty = true;
 
                         foreach($editors as $editor)
@@ -72,7 +72,7 @@ if(is_object($publication)){
                     }
                 }elseif($dataKey == 'topics'){
                     $topics = bibliographie_publications_get_topics($publication['pub_id']);
-                    if(is_array($topics) and count($topics) > 0){
+                    if(is_array($topics) and !empty($topics)){
                         $notEmpty = true;
 
                         foreach($topics as $topic)
@@ -80,7 +80,7 @@ if(is_object($publication)){
                     }
                 }elseif($dataKey == 'tags'){
                     $tags = bibliographie_publications_get_tags($publication['pub_id']);
-                    if(is_array($tags) and count($tags) > 0){
+                    if(is_array($tags) and !empty($tags)){
                         $notEmpty = true;
 
                         foreach($tags as $tag)
@@ -99,7 +99,7 @@ if(is_object($publication)){
 
     <?php
     $notes = bibliographie_publications_get_notes($publication['pub_id']);
-    if(count($notes) > 0){
+    if(!empty($notes)){
         echo '<h3>Notes</h3>';
         foreach($notes as $note)
             echo bibliographie_notes_print_note($note->note_id);
@@ -115,7 +115,7 @@ if(is_object($publication)){
     <div id="attachments">
         <?php
         if(is_array(bibliographie_publications_get_attachments($publication['pub_id']))){
-            if(count(bibliographie_publications_get_attachments($publication['pub_id'])) > 0)
+            if(!empty(bibliographie_publications_get_attachments($publication['pub_id'])))
                 foreach(bibliographie_publications_get_attachments($publication['pub_id']) as $att_id)
                     echo bibliographie_attachments_parse($att_id);
             else

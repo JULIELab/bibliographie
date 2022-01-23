@@ -2,7 +2,7 @@
 
 $publications = bibliographie_publications_get_cached_list($_GET['list']);
 
-if(is_array($publications) and count($publications) > 0){
+if (is_array($publications) and !empty($publications)) {
     if($_GET['category'] == 'topics'){
         if(!empty($_POST['topics']) and is_csv($_POST['topics'], 'int')){
             $topics = csv2array($_POST['topics'], 'int');
@@ -18,7 +18,7 @@ if(is_array($publications) and count($publications) > 0){
 
                     $topicFamily = bibliographie_topics_get_parent_topics($topic->topic_id);
                     $topicFamily[] = $topic->topic_id;
-                    if(count(array_intersect($topicFamily, bibliographie_topics_get_locked_topics()))){
+                    if (!empty(array_intersect($topicFamily, bibliographie_topics_get_locked_topics()))) {
                         echo '<li>'.bibliographie_icon_get('error').' '.bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true)).' is in the list of locked topics. No changes were committed to this topic!</li>';
                         continue;
                     }
@@ -30,7 +30,7 @@ if(is_array($publications) and count($publications) > 0){
                         echo bibliographie_icon_get('tick').' Success!<br />'
                             .'<em>'.count($result['publicationsAdded']).' publications were added. '.count(array_diff($publications, $result['publicationsToAdd'])).' had this topic already.</em>';
 
-                        if(count($result['publicationsAdded']) != count($result['publicationsToAdd']))
+                        if (count($result['publicationsAdded']) != count($result['publicationsToAdd']))
                             echo '<br /><span class="error">'.(count($result['publicationsToAdd']) - count($result['publicationsAdded'])).' could not be added.</span>';
                     }else
                         echo bibliographie_icon_get('cross').'(EE) Adding publication failed!';
@@ -49,7 +49,7 @@ if(is_array($publications) and count($publications) > 0){
 
                     $topicFamily = bibliographie_topics_get_parent_topics($topic->topic_id);
                     $topicFamily[] = $topic->topic_id;
-                    if(count(array_intersect($topicFamily, bibliographie_topics_get_locked_topics()))){
+                    if (!empty(array_intersect($topicFamily, bibliographie_topics_get_locked_topics()))) {
                         echo '<li>'.bibliographie_icon_get('error').' '.bibliographie_topics_parse_name($topic->topic_id, array('linkProfile' => true)).' is in the list of locked topics. No changes were committed to this topic!</li>';
                         continue;
                     }
@@ -88,7 +88,7 @@ if(is_array($publications) and count($publications) > 0){
                         echo bibliographie_icon_get('tick').' Success!<br />'
                             .'<em>'.count($result['publicationsAdded']).' publications were added. '.count(array_diff($publications, $result['publicationsToAdd'])).' had this tag already.</em>';
 
-                        if(count($result['publicationsAdded']) != count($result['publicationsToAdd']))
+                        if (count($result['publicationsAdded']) != count($result['publicationsToAdd']))
                             echo '<br /><span class="error">'.(count($result['publicationsToAdd']) - count($result['publicationsAdded'])).' could not be added.</span>';
                     }else
                         echo bibliographie_icon_get('cross').'(EE) Addition of publication failed!!';

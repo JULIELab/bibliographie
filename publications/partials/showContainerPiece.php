@@ -29,7 +29,7 @@ WHERE
 
     $publications = $publications->fetchAll(PDO::FETCH_COLUMN, 0);
 
-    if(count($publications) > 0){
+    if(!empty($publications)){
         ?>
 
         <h3>Publications in <a href="<?php echo BIBLIOGRAPHIE_WEB_ROOT?>/publications/?task=showContainer&amp;type=<?php echo htmlspecialchars($_GET['type'])?>&amp;container=<?php echo htmlspecialchars($_GET['container'])?>"><?php echo htmlspecialchars($_GET['container'])?></a>, <?php echo ((int) $_GET['year']).' '.htmlspecialchars($_GET[$field[1]])?></h3>

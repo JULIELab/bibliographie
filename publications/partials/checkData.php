@@ -36,7 +36,7 @@ if(is_array($_SESSION['publication_prefetchedData_unchecked'])){
                  */
                 $persons = false;
                 foreach(array('author', 'editor') as $role){
-                    if(count($entry[$role]) > 0){
+                    if (!empty($entry[$role])){
                         $persons = true;
 
                         foreach($entry[$role] as $personID => $person){

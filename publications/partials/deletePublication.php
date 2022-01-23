@@ -6,7 +6,7 @@ $publication = bibliographie_publications_get_data($_GET['pub_id']);
 if(is_object($publication)){
     $notes = bibliographie_publications_get_notes($publication->pub_id);
 
-    if(count($notes) == 0){
+    if(empty($notes)){
         if(bibliographie_publications_delete_publication($publication->pub_id))
             echo '<p class="success">Publication was deleted!</p>';
         else

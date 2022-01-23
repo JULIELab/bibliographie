@@ -33,7 +33,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
         $topics = csv2array($_POST['topics'], 'int');
         $tags = csv2array($_POST['tags'], 'int');
 
-        if(count($errors) == 0){
+        if (empty($errors)) {
             if(is_array($publication)){
                 echo '<h3>Updating publication...</h3>';
 
@@ -56,7 +56,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 
                     if($_GET['useFetchedData'] == '1'){
                         array_shift($_SESSION['publication_prefetchedData_checked']);
-                        if(count($_SESSION['publication_prefetchedData_checked']) > 0)
+                        if(!empty($_SESSION['publication_prefetchedData_checked']))
                             echo '<br /><br /><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/publications/?task=publicationEditor&amp;useFetchedData=1">'.bibliographie_icon_get('page-white-go').' Proceed publication creation with fetched data.</a>';
                         else
                             echo '<br /><br /><em>'.bibliographie_icon_get('page-white-go').' Prefetched data queue is now empty!</em>';
@@ -85,7 +85,7 @@ if(!$done){
      */
     $usingFetchedData = false;
     if($_SERVER['REQUEST_METHOD'] == 'GET'){
-        if($_GET['useFetchedData'] == '1' and count($_SESSION['publication_prefetchedData_checked']) > 0){
+        if($_GET['useFetchedData'] == '1' and !empty($_SESSION['publication_prefetchedData_checked'])){
             $_POST = reset($_SESSION['publication_prefetchedData_checked']);
             if(count($_POST['checked_author']) == count($_POST['author']) and count($_POST['checked_editor']) == count($_POST['editor'])){
                 if(is_array($_POST['checked_author']))
@@ -111,19 +111,19 @@ if(!$done){
             $_POST = $publication;
 
             $authors = bibliographie_publications_get_authors($_GET['pub_id']);
-            if(is_array($authors) and count($authors) > 0)
+            if(is_array($authors) and !empty($authors))
                 $_POST['author'] = array2csv($authors);
 
             $editors = bibliographie_publications_get_editors($_GET['pub_id']);
-            if(is_array($editors) and count($editors) > 0)
+            if(is_array($editors) and !empty($editors))
                 $_POST['editor'] = array2csv($editors);
 
             $tags = bibliographie_publications_get_tags($_GET['pub_id']);
-            if(is_array($tags) and count($tags) > 0)
+            if(is_array($tags) and !empty($tags))
                 $_POST['tags'] = array2csv($tags);
 
             $topics = bibliographie_publications_get_topics($_GET['pub_id']);
-            if(is_array($topics) and count($topics) > 0)
+            if(is_array($topics) and !empty($topics))
                 $_POST['topics'] = array2csv($topics);
         }
     }
@@ -142,7 +142,7 @@ if(!$done){
 
     if(
         is_countable($_SESSION['publication_prefetchedData_checked'])
-        && count($_SESSION['publication_prefetchedData_checked']) > 0
+        && !empty($_SESSION['publication_prefetchedData_checked'])
         && $_GET['useFetchedData'] != '1'
     ){
 
