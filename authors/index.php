@@ -12,7 +12,7 @@ switch($_GET['task']){
 
 		if(is_object($person)){
 			$publications = array_unique(array_merge(bibliographie_authors_get_publications($person->author_id, false), bibliographie_authors_get_publications($person->author_id, true)));
-			if(count($publications) == 0){
+			if (empty($publications)) {
 				echo '<h3>Deleting <em>'.bibliographie_authors_parse_data($person->author_id).'</em></h3>';
 				if(bibliographie_authors_delete($person->author_id))
 					echo '<p class="success">Person was successfully deleted!</p>';
@@ -48,7 +48,7 @@ switch($_GET['task']){
 			if(!empty($_POST['email']) and !is_mail($_POST['email']))
 				$errors[] = 'The mail address you filled is not valid.';
 
-			if(count($errors) == 0){
+			if (empty($errors)) {
 				if(is_object($author)){
 					$return = bibliographie_authors_edit_author($author->author_id, $_POST['firstname'], $_POST['von'], $_POST['surname'], $_POST['jr'], $_POST['email'], $_POST['url'], $_POST['institute']);
 					if(is_array($return)){
@@ -175,7 +175,7 @@ $(function () {
 </ul>
 <?php
 			$tagsArray = bibliographie_authors_get_tags($author->author_id);
-			if(is_array($tagsArray) and count($tagsArray) > 0){
+			if (is_array($tagsArray) and !empty($tagsArray)) {
 ?>
 
 <h4>Tags of publications</h4>
