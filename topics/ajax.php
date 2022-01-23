@@ -13,7 +13,7 @@ switch($_GET['task']){
 			$parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
 			$subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
 
-			if(count($parentTopics) == 0 and count($subTopics) == 0){
+			if (empty($parentTopics) and empty($subTopics)){
 				$text = 'You are about to delete <em>'.bibliographie_topics_parse_name($topic->topic_id).'</em>. If you are sure, click "delete" below!'
 					.'<p class="success"><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=deleteTopic&amp;topic_id='.((int) $topic->topic_id).'">'.bibliographie_icon_get('folder-delete').' Delete!</a></p>'
 					.'If you dont want to delete the topic, press "cancel" below!';
@@ -42,7 +42,7 @@ switch($_GET['task']){
 		$result = array();
 
 		$searchTopics = bibliographie_topics_search_topics($_GET['query']);
-		if(count($searchTopics) > 0){
+		if (!empty($searchTopics)) {
 			foreach($searchTopics as $topic){
 				if(mb_strlen($topic->name) > mb_strlen($_GET['query']) + 5 and $topic->relevancy < 1)
 					break;

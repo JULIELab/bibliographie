@@ -12,7 +12,7 @@ case 'deleteTopic':
         $parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
         $subTopics = bibliographie_topics_get_subtopics($topic->topic_id);
 
-        if (count($parentTopics) == 0 and count($subTopics) == 0) {
+        if (empty($parentTopics) and empty($subTopics)) {
             if (bibliographie_topics_delete($topic->topic_id)) {
                 echo '<p class="success">The topic has been deleted!</p>';
             } else {
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     if (is_array($topic)) {
         $_POST = $topic;
         $topics = bibliographie_topics_get_parent_topics($_GET['topic_id']);
-        if (is_array($topics) and count($topics) > 0) {
+        if (is_array($topics) and !empty($topics)) {
             $_POST['topics'] = implode(',', $topics);
         }
     } else {
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     $topics = csv2array($_POST['topics']);
-    if (count($errors) == 0) {
+    if (empty($errors)) {
         if (is_array($topic)) {
             if (bibliographie_topics_edit_topic($topic['topic_id'], $_POST['name'], $_POST['description'], $_POST['url'], $topics)) {
                 echo '<p class="success">Topic has been edited.</p>';
@@ -192,8 +192,7 @@ case 'showTopic':
         $lockedTopics = bibliographie_topics_get_locked_topics();
 
         if (is_array($lockedTopics) 
-            and count(array_intersect($family, $lockedTopics)) == 0
-        ) {
+            and empty(array_intersect($family, $lockedTopics))) {
             echo '<em style="float: right;">',
                 '<a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/topics/?task=topicEditor&amp;topic_id='.$topic->topic_id.'">'.bibliographie_icon_get('folder-edit').' Edit topic</a>',
                 ' <a href="javascript:;" onclick="bibliographie_topics_confirm_delete('.$topic->topic_id.');">'.bibliographie_icon_get('folder-delete').' Delete topic</a>',
@@ -216,7 +215,7 @@ if (!empty($topic->description)) {
     <?php echo bibliographie_icon_get('page-white-stack')?> Show publications</a>
  (<?php echo count(bibliographie_topics_get_publications($topic->topic_id, false))?>)
 <?php
-if (count(bibliographie_topics_get_subtopics($topic->topic_id, true)) > 0) {
+if (!empty(bibliographie_topics_get_subtopics($topic->topic_id, true))) {
 ?>
 
  <br />
@@ -229,7 +228,7 @@ if (count(bibliographie_topics_get_subtopics($topic->topic_id, true)) > 0) {
 </p>
 <?php
 $parentTopics = bibliographie_topics_get_parent_topics($topic->topic_id);
-if (count($parentTopics) > 0) {
+if (!empty($parentTopics)) {
 ?>
 
 <h4>Parent topics</h4>
@@ -244,7 +243,7 @@ foreach ($parentTopics as $parentTopic) {
 <?php
 }
 
-if (count(bibliographie_topics_get_subtopics($topic->topic_id, true)) > 0) {
+if (!empty(bibliographie_topics_get_subtopics($topic->topic_id, true))) {
 ?>
 
 <span style="float: right">
@@ -258,7 +257,7 @@ if (count(bibliographie_topics_get_subtopics($topic->topic_id, true)) > 0) {
 }
 
 $tags = bibliographie_topics_get_tags($topic->topic_id);
-if (is_array($tags) and count($tags) > 0) {
+if (is_array($tags) and !empty($tags)) {
 ?>
 
 <h4>Publications have the following tags</h4>
