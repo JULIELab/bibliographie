@@ -28,7 +28,7 @@ switch($_GET['task']){
 <h3>List of my bookmarks</h3>
 <?php
 		$publications = bibliographie_bookmarks_get_bookmarks();
-		if(count($publications) > 0){
+		if (!empty($publications)) {
 ?>
 
 <p class="notice">In total you have set <?php echo count($publications)?> bookmark(s)!</p>
