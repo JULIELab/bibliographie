@@ -12,7 +12,7 @@ switch($_GET['task']){
 
 		if(is_object($person)){
 			$publications = array_unique(array_merge(bibliographie_authors_get_publications($person->author_id, false), bibliographie_authors_get_publications($person->author_id, true)));
-			if(count($publications) == 0){
+			if (empty($publications)) {
 				$text = 'You are about to delete <em>'.bibliographie_authors_parse_data($person->author_id).'</em>. If you are sure, click "delete" below!'
 					.'<p class="success"><a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/authors/?task=deleteAuthor&amp;author_id='.((int) $person->author_id).'">'.bibliographie_icon_get('user-delete').' Delete!</a></p>'
 					.'If you dont want to delete the person, press "cancel" below!';
@@ -66,7 +66,7 @@ switch($_GET['task']){
 		$result = array();
 
 		$searchAuthors = bibliographie_authors_search_authors($_GET['q']);
-		if(count($searchAuthors) > 0){
+		if (!empty($searchAuthors)) {
 			foreach($searchAuthors as $author)
 				$result[] = array (
 					'id' => $author->author_id,
