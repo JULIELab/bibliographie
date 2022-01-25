@@ -59,15 +59,15 @@
             </tr>
             <tr>
                 <td>from:$year</td>
-                <td>Include, the word must be present.</td>
+                <td>From year X</td>
             </tr>
             <tr>
                 <td>to:$year</td>
-                <td>Exclude, the word must not be present.</td>
+                <td>To year X</td>
             </tr>
             <tr>
                 <td>in:$year</td>
-                <td>Exclude, the word must not be present.</td>
+                <td>In year X</td>
             </tr>
         </tbody>
     </table>
