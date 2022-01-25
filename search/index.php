@@ -134,7 +134,7 @@ $(function () {
 				$searchResults['notes'] = bibliographie_notes_search_notes($_GET['q'], $expandedQuery);
 				if (is_countable(bibliographie_notes_get_publications_with_notes())
 				    && !empty(bibliographie_notes_get_publications_with_notes())) {
-					$publications = array_intersect(bibliographie_publications_search_publications($_GET['q'], $expandedQuery), bibliographie_notes_get_publications_with_notes(), $booleanSearch);
+					$publications = array_intersect(bibliographie_publications_search_publications($_GET['q'], $expandedQuery, $booleanSearch), bibliographie_notes_get_publications_with_notes());
 					if (is_countable($publications)
 					    && !empty($publications))
 						foreach($publications as $publication)
