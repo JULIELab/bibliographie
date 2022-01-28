@@ -668,11 +668,11 @@ function bibliographie_topics_search_topics ($query, $expandedQuery = '', $boole
                 SELECT 
                     `topic_id`,
                     `name`,
-                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE) AS `relevancy`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'topics` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                 ORDER BY
                     `relevancy` DESC,
                     LENGTH(`name`),
@@ -681,7 +681,9 @@ function bibliographie_topics_search_topics ($query, $expandedQuery = '', $boole
                 ;
             ');
 
-            $topics->execute();
+            $topics->execute(array(
+                'query' => $query
+            ));
 
         } else {
 

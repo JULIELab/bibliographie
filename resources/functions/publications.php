@@ -1692,12 +1692,12 @@ function bibliographie_publications_search_publications ($query, $expandedQuery 
                 SELECT 
                     `pub_id`,
                     `title`,
-                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`,
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE) AS `relevancy`,
                     `year`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                     ' . $addQuery . '
                 ORDER BY
                     `relevancy` DESC,
@@ -1705,7 +1705,9 @@ function bibliographie_publications_search_publications ($query, $expandedQuery 
                 ;
             ');
 
-            $publications->execute();
+            $publications->execute(array(
+                'query' => $query
+            ));
 
         } else {
 
@@ -1783,18 +1785,20 @@ function bibliographie_publications_search_books ($query, $expandedQuery = '', $
             $books = DB::getInstance()->prepare('
                 SELECT 
                     `booktitle`,
-                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE) AS `relevancy`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                 ORDER BY
                     `relevancy` DESC,
                     `booktitle`
                 ;
             ');
 
-            $books->execute();
+            $books->execute(array(
+                'query' => $query
+            ));
 
         } else {
 
@@ -1879,18 +1883,20 @@ function bibliographie_publications_search_journals ($query, $expandedQuery = ''
             $books = DB::getInstance()->prepare('
                 SELECT 
                     `journal`,
-                    MATCH(' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                    MATCH(' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE) AS `relevancy`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'publication` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                 ORDER BY
                     `relevancy` DESC,
                     `journal`
                 ;
             ');
 
-            $books->execute();
+            $books->execute(array(
+                'query' => $query
+            ));
 
         } else {
 

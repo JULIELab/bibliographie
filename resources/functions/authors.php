@@ -434,11 +434,11 @@ function bibliographie_authors_search_authors ($query, $expandedQuery = '', $boo
                     `author_id`,
                     `surname`,
                     `firstname`,
-                    MATCH(' . implode(',', $searchFieldsRelevance) . ') AGAINST ("' . $query . '"  IN BOOLEAN MODE) AS `relevancy`
+                    MATCH(' . implode(',', $searchFieldsRelevance) . ') AGAINST (:query  IN BOOLEAN MODE) AS `relevancy`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'author` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                 ORDER BY
                    `relevancy` DESC,
                     `surname` ASC,
@@ -447,7 +447,9 @@ function bibliographie_authors_search_authors ($query, $expandedQuery = '', $boo
                 ;
             ');
 
-            $authors->execute();
+            $authors->execute(array(
+                'query' => $query
+            ));
 
         } else {
 

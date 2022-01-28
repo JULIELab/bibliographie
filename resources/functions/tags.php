@@ -289,11 +289,11 @@ function bibliographie_tags_search_tags ($query, $expandedQuery = '', $booleanSe
                 SELECT 
                     `tag_id`,
                     `tag`,
-                    MATCH(`tag`) AGAINST ("' . $query . '" IN BOOLEAN MODE) AS `relevancy`
+                    MATCH(`tag`) AGAINST (:query IN BOOLEAN MODE) AS `relevancy`
                 FROM 
                     `' . BIBLIOGRAPHIE_PREFIX . 'tags` 
                 WHERE 
-                    MATCH (' . implode(',', $searchFields) . ') AGAINST ("' . $query . '" IN BOOLEAN MODE)
+                    MATCH (' . implode(',', $searchFields) . ') AGAINST (:query IN BOOLEAN MODE)
                 ORDER BY
                     `relevancy` DESC,
                     LENGTH(`tag`),
@@ -302,7 +302,9 @@ function bibliographie_tags_search_tags ($query, $expandedQuery = '', $booleanSe
                 ;
             ');
 
-            $tags->execute();
+            $tags->execute(array(
+                'query' => $query
+            ));
 
         } else {
 
