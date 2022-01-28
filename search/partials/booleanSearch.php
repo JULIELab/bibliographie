@@ -82,7 +82,7 @@
             <table class="filter" style="border: 1px solid;">
                 <tr>
                     <td>
-                        <span>Puplic.:</span>
+                        <span>Public.:</span>
                         <?php if (!$_GET['q']) { ?>
                             <input type="checkbox" id="pub_title" name="pub_title" value="1" checked>
                             <label for="pub_title">Title</label>
