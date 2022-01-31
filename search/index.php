@@ -267,8 +267,7 @@ $(function () {
 						}
 
 
-                        // @toDo: Seems to throw an error
-						$str .= bibliographie_publications_print_list($results, BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category=publications&amp;q='.htmlspecialchars($_GET['q']), $options);
+						$str .= bibliographie_publications_print_list($results, BIBLIOGRAPHIE_WEB_ROOT.'/search/?category=publications&amp;q='.htmlspecialchars(fetchAllGetParameter()), $options);
 
 					}
 				}
