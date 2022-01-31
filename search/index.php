@@ -9,6 +9,19 @@ if (!function_exists('is_countable')) {
     }
 }
 
+function fetchAllGetParameter() {
+    $returnString = '';
+    $excludeList = ['from'];
+    foreach ($_GET as $key => $getParam) {
+
+        if (!in_array($key, $excludeList)) {
+            $returnString .= '&' . $key . '=' . $getParam;
+        }
+    }
+
+    return $returnString;
+}
+
 $bibliographie_search_categories = array(
 	'topics',
 	'authors',
@@ -188,7 +201,7 @@ $(function () {
 						if (is_countable($results)
 						    && count($results) > $limit and $limit != -1
                         )
-							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category='.$category.'&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
+							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?category='.$category.''.htmlspecialchars(fetchAllGetParameter()).'">Show all found '.$category.'!</a>';
 						else
 							$str .= 'Found <strong>'.count($results).' '.$category.'</strong> shown by relevancy.';
 
@@ -237,7 +250,6 @@ $(function () {
 						$options = array();
 
 
-
 						if($_GET['category'] == 'publications' or $_GET['category'] == 'bookmarks'){
 							$options['orderBy'] = 'year';
 
@@ -245,7 +257,8 @@ $(function () {
 							if (is_countable($results)
 							    && count($results) > $limit and $limit != -1
                             ){
-								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?task=simpleSearch&amp;category=publications&amp;q='.htmlspecialchars($_GET['q']).'">Show all found '.$category.'!</a>';
+
+								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?category=publications'.htmlspecialchars(fetchAllGetParameter()).'">Show all found '.$category.'!</a>';
 								$results = array_slice($results, 0, $limit);
 							}else
 								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> shown by relevancy.';

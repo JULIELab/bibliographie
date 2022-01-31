@@ -1,6 +1,7 @@
 <?php
 
-
+ // do not show if a special category is shown
+if (!isset($_GET['category'])) {
 ?>
 
 
@@ -181,3 +182,7 @@
 
     <div id="mouse_movement"></div>
 </div>
+
+<?php
+}
+?>
