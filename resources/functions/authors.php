@@ -13,7 +13,7 @@
 function bibliographie_authors_create_author ($firstname, $von, $surname, $jr, $email, $url, $institute, $author_id = null) {
 	static $author = null;
 
-	if($author === null)
+	if ($author === null)
 		$author = DB::getInstance()->prepare('INSERT INTO `'.BIBLIOGRAPHIE_PREFIX.'author` (
 	`author_id`,
 	`firstname`,
@@ -45,10 +45,10 @@ function bibliographie_authors_create_author ($firstname, $von, $surname, $jr, $
 		'institute' => $institute
 	));
 
-	if($author_id === null)
+	if ($author_id === null)
 		$author_id = DB::getInstance()->lastInsertId();
 
-	if($return and !empty($author_id)){
+	if ($return and !empty($author_id)){
 		$return = array(
 			'author_id' => $author_id,
 			'firstname' => $firstname,
