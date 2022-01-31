@@ -51,7 +51,7 @@ require dirname(__FILE__).'/resources/functions/general.php';
  * Exit if apache authentification is void.
  */
 if(!isset($_SERVER['PHP_AUTH_USER']))
-	//bibliographie_exit('Authentication error', 'It seems that there is an error with your authentication. Bibliographie can not read your login name and must therefore stop right here.');
+	bibliographie_exit('Authentication error', 'It seems that there is an error with your authentication. Bibliographie can not read your login name and must therefore stop right here.');
 
 /**
  * If root path isnt defined by program file then define it now with the default value.
@@ -469,7 +469,7 @@ if(!bibliographie_user_get_id()){
 		));
 		echo '<p class="success">You have been created as a new user (<em>'.htmlspecialchars($_SERVER['PHP_AUTH_USER']).'</em>)!</p>';
 	} catch (PDOException $e) {
-		//bibliographie_exit('Error creating user', 'Bibliographie could not create you as a user!');
+		bibliographie_exit('Error creating user', 'Bibliographie could not create you as a user!');
 	}
 }
 /**
