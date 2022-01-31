@@ -267,7 +267,7 @@ $(function () {
 						}
 
 
-						$str .= bibliographie_publications_print_list($results, BIBLIOGRAPHIE_WEB_ROOT.'/search/?category=publications&amp;q='.htmlspecialchars(fetchAllGetParameter()), $options);
+						$str .= bibliographie_publications_print_list($results, BIBLIOGRAPHIE_WEB_ROOT.'/search/?category=publications'.htmlspecialchars(fetchAllGetParameter()), $options);
 
 					}
 				}
