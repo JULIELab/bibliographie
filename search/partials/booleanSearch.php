@@ -51,6 +51,10 @@ if (!isset($_GET['category'])) {
                 <td>Defines a phrase (as opposed to a list of individual words, the entire phrase is matched for inclusion or exclusion).</td>
             </tr>
             <tr>
+                <td><strong>More:</strong></td>
+                <td><a target="_blank" href="https://dev.mysql.com/doc/refman/8.0/en/fulltext-boolean.html">Documentation: MySQL Fulltext Boolean Search</a></td>
+            </tr>
+            <tr>
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
             </tr>
@@ -69,6 +73,10 @@ if (!isset($_GET['category'])) {
             <tr>
                 <td>in:$year</td>
                 <td>In year X</td>
+            </tr>
+            <tr>
+                <td><strong>Example:</strong></td>
+                <td>parser +"lang: german" -"dependency grammar" </td>
             </tr>
         </tbody>
     </table>
