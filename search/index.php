@@ -15,8 +15,15 @@ function fetchAllGetParameter() {
     foreach ($_GET as $key => $getParam) {
 
         if (!in_array($key, $excludeList)) {
-            $returnString .= '&' . $key . '=' . $getParam;
+            if ($key == 'q') {
+                $returnString .= '&' . $key . '=' . urlencode($getParam);
+            } else {
+                $returnString .= '&' . $key . '=' . $getParam;
+            }
+
         }
+
+
     }
 
     return $returnString;
@@ -254,10 +261,10 @@ $(function () {
 							$options['orderBy'] = 'year';
 
 						}else{
+
 							if (is_countable($results)
 							    && count($results) > $limit and $limit != -1
                             ){
-
 								$str .= 'Found <strong>'.count($results).' '.$category.'</strong> of which the first '.$limit.' are shown. <a href="'.BIBLIOGRAPHIE_WEB_ROOT.'/search/?category=publications'.htmlspecialchars(fetchAllGetParameter()).'">Show all found '.$category.'!</a>';
 								$results = array_slice($results, 0, $limit);
 							}else
