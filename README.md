@@ -1,10 +1,8 @@
-Intents to be a bibliography management tool that derives from the database scheme of Aigaion v2.1.2.
-You can also use it with the current database scheme version v2.2, but when we began the project we started with the v2.1.2.
+A bibliography management app relying on PHP, a bit of Javascript and MySQL/mariaDB.
 
-Bibliographie aims to tackle some problems of Aigaion like the old code base, slowness for large databases, problems with multihierarchical graphs and adds some neat functionality too, that make it easier to cope with a lot of literature.
 
 # Get it running #
-## 1. step: config file ##
+## First step: config file ##
 
 You need a config file named 'config.php' that you put in the root of this app. The file should look something like that:
 
@@ -40,26 +38,21 @@ define('BIBLIOGRAPHIE_CACHING', true);
 define('BIBLIOGRAPHIE_PREFIX', 'a2');
 ```
 
-## 2. Step ##
+## Second step ##
 
 You need a server side directory authentication, e.g. via apaches .htaccess. And the appropriate authentication names in the database table `users` with the names in the `login` field.
 If you have the user 'foobar' in your .htaccess file, you'll need a row in the `users` table with the login field having the value 'foobar'.
 For users that get authenticated by the server bibliographie will automatically create the appropriate row in the `users` table.
 
-## 2.1 Step ##
-
-The following steps depend on your environment and might be unnecessary:
+### The following steps depend on your environment and might be unnecessary ###
 
 * You might have to give the webserver access to the installation directory. (e.g. under Ubuntu: chown www-data /var/www/bibliographie)
 * You might also have to explicitly allow writes to the files and folders. (e.g. chmod -R 0775 /var/www/bibliographie/*)
 
-## 3. Step ##
+## Third and final step ##
 
-Access the app via a browser at the path you've set in the config file earlier. Follow the instructions to convert/create the database scheme.
+Access the app via a browser at the path you've set in the config file earlier. Follow the instructions to either convert an existing database or create a new, empty one.
 
-## Reach the finish line ##
-
-All done... You can now start using bibliographie...
 
 # 3rd party libraries #
 This is a list of stuff that i didn't handcraft myself but took from other nice people because their software suits my needs.
@@ -83,3 +76,6 @@ Additionally at the block (lines 198 to 201)
 ```
 
 remove the line `$(this.val(""));`. This is also already done in the redistributed file.
+
+# Credits, history #
+Rooted in the database scheme of the bibliography management app Aigaion v2.1.2. by Dennis Reidsma. That all happened before the currently available forks of Aigaion.
