@@ -400,7 +400,7 @@ function bibliographie_authors_delete ($author_id) {
  * @param type $expandedQuery
  * @return type
  */
-function bibliographie_authors_search_authors ($query, $expandedQuery = '', $booleanSearch) {
+function bibliographie_authors_search_authors ($query, $expandedQuery = '', $booleanSearch = false) {
 	$return = array();
 
 	if(mb_strlen($query) >= BIBLIOGRAPHIE_SEARCH_MIN_CHARS){
