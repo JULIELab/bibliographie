@@ -273,9 +273,7 @@ function bibliographie_tags_search_tags ($query, $expandedQuery = '', $booleanSe
 
             $searchFields = [];
 
-            if ($_GET['tag_id']) {
-                $searchFields[] ="`tag_id`";
-            }
+
             if ($_GET['tag_name']) {
                 $searchFields[] ="`tag`";
             }

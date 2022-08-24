@@ -652,9 +652,7 @@ function bibliographie_topics_search_topics ($query, $expandedQuery = '', $boole
 
             $searchFields = [];
 
-            if ($_GET['topic_id']) {
-                $searchFields[] ="`topic_id`";
-            }
+
             if ($_GET['topic_name']) {
                 $searchFields[] ="`name`";
             }

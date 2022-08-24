@@ -412,9 +412,6 @@ function bibliographie_authors_search_authors ($query, $expandedQuery = '', $boo
             $searchFields = [];
             $searchFieldsRelevance = [];
 
-            if ($_GET['author_id']) {
-                $searchFields[] ="`author_id`";
-            }
             if ($_GET['author_surname']) {
                 $searchFields[] ="`surname`";
                 $searchFieldsRelevance[] ="`surname`";
