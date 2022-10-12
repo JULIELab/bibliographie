@@ -1458,12 +1458,12 @@ class Structures_BibTex {
 			$arr = explode('{', $entry);
 			$ret['cite'] = trim($arr[1]);
 			$ret['entryType'] = strtolower(trim($arr[0]));
-			if ('@' == $ret['entryType']{0}) {
+			if ('@' == $ret['entryType'][0]) {
 				$ret['entryType'] = substr($ret['entryType'], 1);
 			}
 			if ($this->_options['validate']) {
 				if (!$this->_checkAllowedEntryType($ret['entryType'])) {
-					$this->_generateWarning('WARNING_NOT_ALLOWED_ENTRY_TYPE', $ret['entryType'], $entry . '}');
+					$this->_generateWarning('WARNING_NOT_ALLOWED_ENTRY_TYPE', $ret['entryType'], $entry . ' }');
 				}
 			}
 			$ret['entryType'] = mb_strtoupper(mb_substr($ret['entryType'], 0, 1)).mb_substr($ret['entryType'], 1);
@@ -1515,9 +1515,9 @@ class Structures_BibTex {
 		//Then it is possible that the braces are equal even if the '=' is in an equation.
 		if ($ret) {
 			$entrycopy = trim($entry);
-			$lastchar = $entrycopy{strlen($entrycopy) - 1};
+			$lastchar = $entrycopy[strlen($entrycopy) - 1];
 			if (',' == $lastchar) {
-				$lastchar = $entrycopy{strlen($entrycopy) - 2};
+				$lastchar = $entrycopy[strlen($entrycopy) - 2];
 			}
 			if ('"' == $lastchar) {
 				//The return value is set to false
