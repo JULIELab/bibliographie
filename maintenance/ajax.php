@@ -25,12 +25,18 @@ switch($_GET['task']){
 		if(is_object($into) and is_object($delete) and $into->author_id != $delete->author_id){
 			$merge = bibliographie_maintenance_merge_authors($into->author_id, $delete->author_id);
 			if(is_array($merge))
-				echo '<span class="success"><strong>'.$merge['publicationsAffected'].' publication</strong>(s) have been relinked!</span><br />';
+				echo '<span class="success"><strong>'
+					. $merge['publicationsAffected']
+					. ' publication</strong>(s) have been relinked!</span><br />';
 
 			if(bibliographie_authors_delete($delete->author_id))
 				echo '<span class="success">Second author has been deleted!</span><br /><br />';
 			else
-				echo '<span class="error">'.bibliographie_authors_parse_data($delete->author_id, array('linkProfile' => true)).' could not have been deleted because he still has publications, that were not transferred to '.bibliographie_authors_parse_data($into->author_id, array('linkProfile' => true)).'!</span><br /><br />';
+				echo '<span class="error">' 
+					. bibliographie_authors_parse_data($delete->author_id, array('linkProfile' => true)) 
+					. ' could not have been deleted because he still has publications, that were not transferred to '
+					. bibliographie_authors_parse_data($into->author_id, array('linkProfile' => true))
+					. '!</span><br /><br />';
 
 			bibliographie_maintenance_print_author_profile($into->author_id, (int) $_GET['into_group']);
 		}else
@@ -103,23 +109,40 @@ ORDER BY
 		switch($_GET['consistencyCheckID']){
 			case 'links_thatPointNowhere':
 				$deadLinks = array(
-					'Publication to author' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` WHERE `author_id` NOT IN (SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author`)',
-					'Author to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Publication to tag' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` WHERE `tag_id` NOT IN (SELECT `tag_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'tags`)',
-					'Tag to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'publicationtaglink` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Publication to topic' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
-					'Topic to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Topic to subtopic' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` WHERE `source_topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
-					'Subtopic to topic' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'topictopiclink` WHERE `target_topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
-					'Note to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'notes` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Note to user' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'notes` WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`)',
-					'Attachment to publication' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'attachments` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Attachment to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'attachments` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
-					'Locked topics' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'lockedtopics` WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'topics`)',
-					'Publication to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'publication` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
-					'Topic to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'topics` SET `user_id` = 0 WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
-					'User to bookmark' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists` WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'publication`)',
-					'Bookmark to user' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists` WHERE `user_id` NOT IN (SELECT `user_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'users`)'
+					'Publication to author' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` 
+						WHERE `author_id` NOT IN (SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author`)',
+					'Author to publication' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'publicationauthorlink` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Publication to tag' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'publicationtaglink` 
+						WHERE `tag_id` NOT IN (SELECT `tag_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'tags`)',
+					'Tag to publication' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'publicationtaglink` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'. BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Publication to topic' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` 
+						WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'topics`)',
+					'Topic to publication' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'topicpublicationlink` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `'. BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Topic to subtopic' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'topictopiclink` 
+						WHERE `source_topic_id` NOT IN (SELECT `topic_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'topics`)',
+					'Subtopic to topic' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'topictopiclink` 
+						WHERE `target_topic_id` NOT IN (SELECT `topic_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'topics`)',
+					'Note to publication' => 'DELETE FROM `'. BIBLIOGRAPHIE_PREFIX.'notes` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Note to user' => 'DELETE FROM `'. BIBLIOGRAPHIE_PREFIX.'notes` 
+						WHERE `user_id` NOT IN (SELECT `user_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'users`)',
+					'Attachment to publication' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'attachments` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Attachment to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'attachments` SET `user_id` = 0 
+						WHERE `user_id` NOT IN (SELECT `user_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
+					'Locked topics' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'lockedtopics` 
+						WHERE `topic_id` NOT IN (SELECT `topic_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'topics`)',
+					'Publication to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'publication` SET `user_id` = 0 
+						WHERE `user_id` NOT IN (SELECT `user_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
+					'Topic to user' => 'UPDATE `'.BIBLIOGRAPHIE_PREFIX.'topics` SET `user_id` = 0 
+						WHERE `user_id` NOT IN (SELECT `user_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'users`) AND `user_id` != 0',
+					'User to bookmark' => 'DELETE FROM `'.BIBLIOGRAPHIE_PREFIX.'userbookmarklists` 
+						WHERE `pub_id` NOT IN (SELECT `pub_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'publication`)',
+					'Bookmark to user' => 'DELETE FROM `' . BIBLIOGRAPHIE_PREFIX.'userbookmarklists` 
+						WHERE `user_id` NOT IN (SELECT `user_id` FROM `' . BIBLIOGRAPHIE_PREFIX.'users`)'
 				);
 
 				ksort($deadLinks);
@@ -136,7 +159,11 @@ ORDER BY
 				}
 			break;
 			case 'authors_charsetArtifacts':
-				$authors = DB::getInstance()->prepare('SELECT `author_id` FROM `'.BIBLIOGRAPHIE_PREFIX.'author` WHERE CONCAT(`firstname`, `von`, `surname`, `jr`) NOT REGEXP "^([abcdefghijklmnopqrstuvwxyzäöüßáéíóúàèìòùç[.full-stop.][.\'.][.hyphen.][.space.]]*)\$" ORDER BY `surname`, `firstname`');
+				$authors = DB::getInstance()->prepare('SELECT `author_id` 
+					FROM `' . BIBLIOGRAPHIE_PREFIX.'author` 
+					WHERE CONCAT(`firstname`, `von`, `surname`, `jr`) 
+					NOT REGEXP "^([[:alpha:]äöüßáéíóúàèìòùç\.[:space:]\x27\x2d]*)\$" 
+					ORDER BY `surname`, `firstname`');
 				$authors->setFetchMode(PDO::FETCH_OBJ);
 				$authors->execute();
 
