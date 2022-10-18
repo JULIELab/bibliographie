@@ -1,4 +1,4 @@
-A bibliography management app relying on PHP, a bit of Javascript and MySQL/mariaDB.
+A bibliography management app relying on PHP + php-mbstring extension, a bit of Javascript and MySQL/mariaDB.
 
 
 # Get it running #
